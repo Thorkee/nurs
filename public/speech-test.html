@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Azure Speech API Test</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    .container {
+      background-color: #f5f5f5;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+    }
+    h1 {
+      color: #333;
+    }
+    label {
+      display: block;
+      margin-top: 15px;
+      font-weight: bold;
+    }
+    input, textarea {
+      width: 100%;
+      padding: 8px;
+      margin-top: 5px;
+      margin-bottom: 15px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      box-sizing: border-box;
+    }
+    button {
+      background-color: #4285f4;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 4px;
+      cursor: pointer;
+      margin-right: 10px;
+    }
+    button:hover {
+      background-color: #3367d6;
+    }
+    .result {
+      margin-top: 20px;
+      padding: 15px;
+      border-radius: 4px;
+    }
+    .success {
+      background-color: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+    }
+    .error {
+      background-color: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+    }
+    .log {
+      margin-top: 20px;
+      padding: 15px;
+      background-color: #f8f9fa;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      overflow-x: auto;
+      font-family: monospace;
+      white-space: pre-wrap;
+    }
+    audio {
+      width: 100%;
+      margin-top: 15px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Azure Speech API Test</h1>
+  
+  <div class="container">
+    <h2>Configuration</h2>
+    <label for="speechKey">Speech API Key:</label>
+    <input type="text" id="speechKey" placeholder="Enter your Azure Speech API Key">
+    
+    <label for="speechRegion">Speech Region:</label>
+    <input type="text" id="speechRegion" value="eastus2" placeholder="e.g., eastus2">
+    
+    <label for="voiceName">Voice Name:</label>
+    <input type="text" id="voiceName" value="zh-HK-WanLungNeural" placeholder="e.g., zh-HK-WanLungNeural">
+    
+    <h3>Test Text</h3>
+    <textarea id="testText" rows="3" placeholder="Enter text to convert to speech">你好，這是一個測試。</textarea>
+    
+    <button id="testBtn">Test Speech API</button>
+    <button id="listVoicesBtn">List Available Voices</button>
+  </div>
+  
+  <div id="resultContainer" class="result" style="display: none;"></div>
+  
+  <div id="audioContainer" style="display: none;">
+    <h3>Audio Output</h3>
+    <audio id="audioOutput" controls></audio>
+  </div>
+  
+  <div id="voicesContainer" style="display: none;">
+    <h3>Available Voices</h3>
+    <div id="voicesList" class="log"></div>
+  </div>
+  
+  <div id="logContainer" style="display: none;">
+    <h3>Debug Log</h3>
+    <div id="log" class="log"></div>
+  </div>
+
+  <script>
+    // Utility to log to the output
+    function log(message, isError = false) {
+      const logEl = document.getElementById('log');
+      const logContainer = document.getElementById('logContainer');
+      
+      logContainer.style.display = 'block';
+      
+      if (typeof message === 'object') {
+        try {
+          message = JSON.stringify(message, null, 2);
+        } catch (e) {
+          message = message.toString();
+        }
+      }
+      
+      const timestamp = new Date().toLocaleTimeString();
+      const entry = `[${timestamp}] ${message}\n`;
+      
+      logEl.innerHTML += isError 
+        ? `<span style="color: red">${entry}</span>` 
+        : entry;
+      
+      logEl.scrollTop = logEl.scrollHeight;
+    }
+
+    // Show result message
+    function showResult(message, isError = false) {
+      const resultEl = document.getElementById('resultContainer');
+      resultEl.style.display = 'block';
+      resultEl.className = isError ? 'result error' : 'result success';
+      resultEl.textContent = message;
+    }
+
+    // Test Azure Speech API
+    async function testSpeechAPI() {
+      const speechKey = document.getElementById('speechKey').value;
+      const speechRegion = document.getElementById('speechRegion').value;
+      const voiceName = document.getElementById('voiceName').value;
+      const testText = document.getElementById('testText').value;
+      
+      if (!speechKey || !speechRegion || !voiceName || !testText) {
+        showResult('Please fill in all fields', true);
+        return;
+      }
+      
+      // Reset previous results
+      document.getElementById('audioContainer').style.display = 'none';
+      showResult('Testing Azure Speech API...');
+      
+      // Log configuration
+      log(`Testing with the following configuration:`);
+      log(`Speech Key: ${speechKey.substring(0, 5)}...`);
+      log(`Speech Region: ${speechRegion}`);
+      log(`Voice Name: ${voiceName}`);
+      log(`Test Text: "${testText}"`);
+      
+      try {
+        // Prepare SSML
+        const escapedText = testText
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&apos;');
+          
+        const ssml = `<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xml:lang="zh-HK"><voice name="${voiceName}">${escapedText}</voice></speak>`;
+        
+        log(`Sending request to speech synthesis endpoint...`);
+        
+        // Make request
+        const response = await fetch(`https://${speechRegion}.tts.speech.microsoft.com/cognitiveservices/v1`, {
+          method: 'POST',
+          headers: {
+            'Ocp-Apim-Subscription-Key': speechKey,
+            'Content-Type': 'application/ssml+xml',
+            'X-Microsoft-OutputFormat': 'audio-16khz-128kbitrate-mono-mp3'
+          },
+          body: ssml
+        });
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`HTTP error ${response.status}: ${errorText || response.statusText}`);
+        }
+        
+        // Get audio data
+        const audioData = await response.arrayBuffer();
+        log(`Received ${audioData.byteLength} bytes of audio data`);
+        
+        // Create audio object and play
+        const audioBlob = new Blob([audioData], { type: 'audio/mp3' });
+        const audioUrl = URL.createObjectURL(audioBlob);
+        
+        const audioEl = document.getElementById('audioOutput');
+        audioEl.src = audioUrl;
+        document.getElementById('audioContainer').style.display = 'block';
+        
+        showResult('✅ Speech synthesis successful! Audio is ready to play.');
+        log(`Speech synthesis completed successfully!`);
+        
+      } catch (error) {
+        log(`Error: ${error.message}`, true);
+        showResult(`❌ Speech synthesis failed: ${error.message}`, true);
+      }
+    }
+    
+    // List available voices
+    async function listVoices() {
+      const speechKey = document.getElementById('speechKey').value;
+      const speechRegion = document.getElementById('speechRegion').value;
+      
+      if (!speechKey || !speechRegion) {
+        showResult('Please enter Speech Key and Region', true);
+        return;
+      }
+      
+      const voicesContainer = document.getElementById('voicesContainer');
+      const voicesList = document.getElementById('voicesList');
+      
+      voicesContainer.style.display = 'none';
+      voicesList.innerHTML = '';
+      showResult('Fetching available voices...');
+      
+      try {
+        log(`Requesting voice list from Azure...`);
+        
+        // Make request
+        const response = await fetch(`https://${speechRegion}.tts.speech.microsoft.com/cognitiveservices/voices/list`, {
+          method: 'GET',
+          headers: {
+            'Ocp-Apim-Subscription-Key': speechKey
+          }
+        });
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`HTTP error ${response.status}: ${errorText || response.statusText}`);
+        }
+        
+        // Get voice data
+        const voices = await response.json();
+        log(`Retrieved ${voices.length} voices`);
+        
+        // Filter to show just Chinese (HK) voices
+        const hkVoices = voices.filter(v => v.Locale.includes('zh-HK'));
+        
+        if (hkVoices.length === 0) {
+          voicesList.innerHTML = 'No zh-HK voices found. Showing all voices.';
+          displayVoices(voices);
+        } else {
+          voicesList.innerHTML = `<h4>Chinese (HK) Voices:</h4>`;
+          displayVoices(hkVoices);
+          
+          voicesList.innerHTML += `<h4>All Voices:</h4>`;
+          displayVoices(voices);
+        }
+        
+        voicesContainer.style.display = 'block';
+        showResult(`✅ Successfully retrieved ${voices.length} voices`);
+        
+      } catch (error) {
+        log(`Error listing voices: ${error.message}`, true);
+        showResult(`❌ Failed to list voices: ${error.message}`, true);
+      }
+      
+      function displayVoices(voicesList) {
+        const table = document.createElement('table');
+        table.style.width = '100%';
+        table.style.borderCollapse = 'collapse';
+        
+        // Create header
+        const header = table.createTHead();
+        const headerRow = header.insertRow();
+        ['Name', 'Display Name', 'Locale', 'Gender'].forEach(text => {
+          const cell = headerRow.insertCell();
+          cell.textContent = text;
+          cell.style.fontWeight = 'bold';
+          cell.style.padding = '8px';
+          cell.style.borderBottom = '1px solid #ddd';
+        });
+        
+        // Add data rows
+        const tbody = table.createTBody();
+        voicesList.forEach(voice => {
+          const row = tbody.insertRow();
+          
+          const shortNameCell = row.insertCell();
+          shortNameCell.textContent = voice.ShortName;
+          shortNameCell.style.padding = '8px';
+          shortNameCell.style.borderBottom = '1px solid #eee';
+          
+          const displayNameCell = row.insertCell();
+          displayNameCell.textContent = voice.DisplayName;
+          displayNameCell.style.padding = '8px';
+          displayNameCell.style.borderBottom = '1px solid #eee';
+          
+          const localeCell = row.insertCell();
+          localeCell.textContent = voice.Locale;
+          localeCell.style.padding = '8px';
+          localeCell.style.borderBottom = '1px solid #eee';
+          
+          const genderCell = row.insertCell();
+          genderCell.textContent = voice.Gender;
+          genderCell.style.padding = '8px';
+          genderCell.style.borderBottom = '1px solid #eee';
+        });
+        
+        document.getElementById('voicesList').appendChild(table);
+      }
+    }
+
+    // Event listeners
+    document.getElementById('testBtn').addEventListener('click', testSpeechAPI);
+    document.getElementById('listVoicesBtn').addEventListener('click', listVoices);
+    
+    // Fill in values from URL parameters if available
+    window.addEventListener('DOMContentLoaded', () => {
+      const params = new URLSearchParams(window.location.search);
+      
+      if (params.has('key')) {
+        document.getElementById('speechKey').value = params.get('key');
+      }
+      
+      if (params.has('region')) {
+        document.getElementById('speechRegion').value = params.get('region');
+      }
+      
+      if (params.has('voice')) {
+        document.getElementById('voiceName').value = params.get('voice');
+      }
+    });
+  </script>
+</body>
+</html> 

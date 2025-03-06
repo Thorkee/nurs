@@ -78,6 +78,16 @@
   font-size: 0.9rem;
 }
 
+.role-instruction {
+  background-color: #fff8e1;
+  border: 1px solid #ffd54f;
+  padding: 0.8rem;
+  margin-top: 0.8rem !important;
+  border-radius: 4px;
+  font-weight: 500;
+  color: #ff6f00;
+}
+
 .nurse-speech, .patient-speech {
   padding: 0.8rem;
   border-radius: 8px;

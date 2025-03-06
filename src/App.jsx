@@ -42,7 +42,7 @@ function App() {
       </main>
 
       <footer>
-        <p>© {new Date().getFullYear()} - Nursing Education Tool</p>
+        <p>© {new Date().getFullYear()} - School of Nursing, The Hong Kong Polytechnic University</p>
       </footer>
     </div>
   );

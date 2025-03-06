@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import './PatientSimulator.css';
+import SpeechTest from './SpeechTest';
 
 // Services for API communication
 import { transcribeSpeech } from '../services/speechToTextService';
@@ -13,6 +14,7 @@ const PatientSimulator = ({ isActive, onStart, onStop, onConversationUpdate }) =
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState('');
   const [conversationHistory, setConversationHistory] = useState([]);
+  const [showSpeechTest, setShowSpeechTest] = useState(false);
   
   const audioRef = useRef(null);
   const mediaRecorderRef = useRef(null);
@@ -71,6 +73,7 @@ const PatientSimulator = ({ isActive, onStart, onStop, onConversationUpdate }) =
   const handlePatientResponse = async (text) => {
     try {
       setIsProcessing(true);
+      setError('');
       
       // Generate patient response
       const response = await generateResponse(text, conversationHistory);
@@ -86,12 +89,41 @@ const PatientSimulator = ({ isActive, onStart, onStop, onConversationUpdate }) =
       onConversationUpdate(patientEntry);
       
       // Convert response to speech
-      const audioUrl = await textToSpeech(response);
-      audioRef.current.src = audioUrl;
-      audioRef.current.play();
+      try {
+        const audioUrl = await textToSpeech(response);
+        audioRef.current.src = audioUrl;
+        
+        // Add event listeners for audio playback
+        audioRef.current.onerror = (e) => {
+          console.error('Audio playback error:', e);
+          setError('音頻播放失敗。請閱讀文本回應。');
+        };
+        
+        audioRef.current.onended = () => {
+          console.log('Audio playback finished successfully');
+        };
+        
+        const playPromise = audioRef.current.play();
+        if (playPromise !== undefined) {
+          playPromise.catch(err => {
+            console.error('Audio play error:', err);
+            // Try playing again after a short delay
+            setTimeout(() => {
+              audioRef.current.play().catch(e => {
+                console.error('Retry audio play error:', e);
+                setError('音頻播放失敗。請閱讀文本回應。');
+              });
+            }, 1000);
+          });
+        }
+      } catch (audioErr) {
+        console.error('Text-to-speech error:', audioErr);
+        setError(`音頻生成錯誤: ${audioErr.message}`);
+        // We can still continue with the text response
+      }
     } catch (err) {
-      setError(`Error processing response: ${err.message}`);
-      console.error(err);
+      console.error('Response generation error:', err);
+      setError(`處理響應時出錯: ${err.message}`);
     } finally {
       setIsProcessing(false);
     }
@@ -101,6 +133,9 @@ const PatientSimulator = ({ isActive, onStart, onStop, onConversationUpdate }) =
   const startRecording = async () => {
     try {
       setError('');
+      setTranscribedText('');
+      setPatientResponse('');
+      
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       mediaRecorderRef.current = new MediaRecorder(stream);
       
@@ -112,11 +147,24 @@ const PatientSimulator = ({ isActive, onStart, onStop, onConversationUpdate }) =
         const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/wav' });
         audioChunksRef.current = [];
         
+        if (audioBlob.size < 100) {
+          setError('錄音太短或沒有聲音被錄製。請再試一次。');
+          return;
+        }
+        
         try {
           setIsProcessing(true);
+          setError('');
           
           // Step 1: Transcribe speech to text
           const text = await transcribeSpeech(audioBlob);
+          
+          if (!text || text.trim() === '') {
+            setError('無法識別您的語音，請再試一次或使用建議問題。');
+            setIsProcessing(false);
+            return;
+          }
+          
           setTranscribedText(text);
           
           // Add nurse's speech to conversation
@@ -132,8 +180,8 @@ const PatientSimulator = ({ isActive, onStart, onStop, onConversationUpdate }) =
           await handlePatientResponse(text);
           
         } catch (err) {
-          setError(`Error processing audio: ${err.message}`);
-          console.error(err);
+          console.error('Audio processing error:', err);
+          setError(`音頻處理錯誤: ${err.message}`);
         } finally {
           setIsProcessing(false);
         }
@@ -142,8 +190,8 @@ const PatientSimulator = ({ isActive, onStart, onStop, onConversationUpdate }) =
       mediaRecorderRef.current.start();
       setIsRecording(true);
     } catch (err) {
-      setError(`Microphone access error: ${err.message}`);
-      console.error(err);
+      console.error('Microphone access error:', err);
+      setError(`麥克風訪問錯誤: ${err.message}. 請確保麥克風已連接並且已授予訪問權限。`);
     }
   };
 
@@ -174,11 +222,6 @@ const PatientSimulator = ({ isActive, onStart, onStop, onConversationUpdate }) =
 
   return (
     <div className="patient-simulator">
-      <div className="patient-avatar">
-        <img src="/patient-avatar.png" alt="Mr. Chan - Virtual Patient" />
-        {isProcessing && <div className="processing-indicator">處理中...</div>}
-      </div>
-
       <div className="patient-controls">
         <h3>病人模擬器 - 陳先生，58歲</h3>
         <p>Patient Simulator - Mr. Chan, 58 years old</p>
@@ -190,6 +233,7 @@ const PatientSimulator = ({ isActive, onStart, onStop, onConversationUpdate }) =
             <p>- 他目前尚未得到診斷，這顯著增加了他的焦慮。</p>
             <p>- 他對大腸內窺鏡程序、準備工作、潛在不適和可能的嚴重結果感到擔憂。</p>
             <p>- 他感到焦慮、困惑、尷尬和緊張。</p>
+            <p className="role-instruction"><strong>注意：</strong> 您是護士，陳先生是病人。您需要向陳先生提問，他會回答您的問題。</p>
           </div>
         )}
         
@@ -231,27 +275,25 @@ const PatientSimulator = ({ isActive, onStart, onStop, onConversationUpdate }) =
 
         {error && <div className="error-message">{error}</div>}
         
-        {isActive && (
-          <div className="suggestion-box">
-            <h4>建議問題:</h4>
-            {suggestedQuestions.map((category, catIndex) => (
-              <div key={catIndex} className="question-category">
-                <h5>{category.category}</h5>
-                <div className="suggested-questions">
-                  {category.questions.map((question, qIndex) => (
-                    <div 
-                      key={qIndex} 
-                      className="suggested-question"
-                      onClick={() => useSuggestedQuestion(question)}
-                    >
-                      {question}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
+        {error && error.includes('Failed to convert text to speech') && (
+          <button 
+            className="debug-btn"
+            onClick={() => setShowSpeechTest(!showSpeechTest)}
+            style={{
+              marginTop: '10px',
+              padding: '5px 10px',
+              backgroundColor: '#f39c12',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: 'pointer'
+            }}
+          >
+            {showSpeechTest ? '隱藏語音測試' : '顯示語音測試工具'}
+          </button>
         )}
+        
+        {showSpeechTest && <SpeechTest />}
       </div>
       
       <audio ref={audioRef} className="hidden" />

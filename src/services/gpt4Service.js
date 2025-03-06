@@ -9,11 +9,15 @@ import axios from 'axios';
 export const generateResponse = async (userInput, conversationHistory) => {
   try {
     // Get API credentials from environment variables
-    const apiKey = process.env.AZURE_OPENAI_API_KEY;
-    const endpoint = process.env.AZURE_OPENAI_ENDPOINT;
-    const deploymentId = process.env.AZURE_OPENAI_DEPLOYMENT_ID;
-    const apiVersion = process.env.AZURE_OPENAI_API_VERSION;
+    const apiKey = import.meta.env.VITE_AZURE_OPENAI_API_KEY;
+    const endpoint = import.meta.env.VITE_AZURE_OPENAI_ENDPOINT;
+    const deploymentId = import.meta.env.VITE_AZURE_OPENAI_DEPLOYMENT_ID;
+    const apiVersion = import.meta.env.VITE_AZURE_OPENAI_API_VERSION;
 
+    console.log('Azure OpenAI API Key available:', !!apiKey);
+    console.log('Azure OpenAI Endpoint:', endpoint);
+    console.log('Azure OpenAI Deployment ID:', deploymentId);
+    
     // Format conversation history for the API
     const formattedHistory = conversationHistory.map(entry => ({
       role: entry.role === 'nurse' ? 'user' : 'assistant',
@@ -74,23 +78,34 @@ You are **Mr. Chan**, a **58-year-old man** preparing for a **colonoscopy**. You
     ];
 
     // Make API request to Azure OpenAI
-    const response = await axios.post(
-      `${endpoint}/openai/deployments/${deploymentId}/chat/completions?api-version=${apiVersion}`,
-      {
-        messages,
-        temperature: 0.7,
-        max_tokens: 500,
-      },
-      {
-        headers: {
-          'Content-Type': 'application/json',
-          'api-key': apiKey,
+    try {
+      console.log('Sending request to Azure OpenAI...');
+      const response = await axios.post(
+        `${endpoint}/openai/deployments/${deploymentId}/chat/completions?api-version=${apiVersion}`,
+        {
+          messages,
+          temperature: 0.7,
+          max_tokens: 500,
         },
-      }
-    );
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            'api-key': apiKey,
+          },
+        }
+      );
 
-    // Extract and return the generated text
-    return response.data.choices[0].message.content;
+      console.log('Successfully received response from Azure OpenAI');
+      // Extract and return the generated text
+      return response.data.choices[0].message.content;
+    } catch (apiError) {
+      console.error('Error calling Azure OpenAI API:', apiError);
+      if (apiError.response) {
+        console.error('Response status:', apiError.response.status);
+        console.error('Response data:', apiError.response.data);
+      }
+      throw new Error(`Failed to call Azure OpenAI API: ${apiError.message}`);
+    }
   } catch (error) {
     console.error('Error generating response:', error);
     throw new Error(`Failed to generate response: ${error.message}`);
