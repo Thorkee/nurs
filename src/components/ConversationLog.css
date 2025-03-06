@@ -1,0 +1,102 @@
+.conversation-log {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.conversation-header {
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--light-gray);
+}
+
+.conversation-header p {
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.conversation-entries {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding-right: 0.5rem;
+}
+
+.empty-conversation {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 200px;
+  color: #666;
+  text-align: center;
+  border: 2px dashed var(--light-gray);
+  border-radius: 8px;
+  padding: 1rem;
+}
+
+.conversation-entry {
+  padding: 1rem;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.nurse-entry {
+  background-color: #e8f4f8;
+  border-left: 4px solid var(--primary-color);
+}
+
+.patient-entry {
+  background-color: #f0f7f0;
+  border-left: 4px solid var(--secondary-color);
+}
+
+.entry-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+  padding-bottom: 0.3rem;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.entry-role {
+  font-weight: 500;
+}
+
+.entry-time {
+  font-size: 0.8rem;
+  color: #666;
+}
+
+.entry-text {
+  line-height: 1.7;
+}
+
+.conversation-actions {
+  margin-top: 1rem;
+  display: flex;
+  justify-content: center;
+}
+
+.save-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0.7rem 1.5rem;
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 500;
+  transition: background-color 0.3s ease;
+}
+
+.save-btn:hover {
+  background-color: #2980b9;
+}
+
+.save-btn span {
+  font-size: 0.8rem;
+  margin-top: 0.2rem;
+} 
