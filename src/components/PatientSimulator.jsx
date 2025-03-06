@@ -15,10 +15,22 @@ const PatientSimulator = ({ isActive, onStart, onStop, onConversationUpdate }) =
   const [error, setError] = useState('');
   const [conversationHistory, setConversationHistory] = useState([]);
   const [showSpeechTest, setShowSpeechTest] = useState(false);
+  const [autoMode, setAutoMode] = useState(true); // Default to auto mode
   
   const audioRef = useRef(null);
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
+
+  // Effect to start recording when simulation becomes active if in auto mode
+  useEffect(() => {
+    if (isActive && autoMode && !isRecording && !isProcessing) {
+      // Small delay to ensure UI has updated
+      const timer = setTimeout(() => {
+        startRecording();
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [isActive, autoMode, isProcessing]);
 
   // Suggested questions based on the colonoscopy scenario
   const suggestedQuestions = [
@@ -99,8 +111,17 @@ const PatientSimulator = ({ isActive, onStart, onStop, onConversationUpdate }) =
           setError('音頻播放失敗。請閱讀文本回應。');
         };
         
+        // Auto-start recording after audio finishes playing
         audioRef.current.onended = () => {
           console.log('Audio playback finished successfully');
+          // Start recording automatically after a short delay if in auto mode
+          if (autoMode && isActive) {
+            setTimeout(() => {
+              if (!isRecording && !isProcessing && isActive) {
+                startRecording();
+              }
+            }, 1000); // 1 second delay before starting next recording
+          }
         };
         
         const playPromise = audioRef.current.play();
@@ -112,6 +133,14 @@ const PatientSimulator = ({ isActive, onStart, onStop, onConversationUpdate }) =
               audioRef.current.play().catch(e => {
                 console.error('Retry audio play error:', e);
                 setError('音頻播放失敗。請閱讀文本回應。');
+                // Still try to start recording on error if in auto mode
+                if (autoMode && isActive) {
+                  setTimeout(() => {
+                    if (!isRecording && !isProcessing && isActive) {
+                      startRecording();
+                    }
+                  }, 1000);
+                }
               });
             }, 1000);
           });
@@ -119,11 +148,26 @@ const PatientSimulator = ({ isActive, onStart, onStop, onConversationUpdate }) =
       } catch (audioErr) {
         console.error('Text-to-speech error:', audioErr);
         setError(`音頻生成錯誤: ${audioErr.message}`);
-        // We can still continue with the text response
+        // Still try to start recording on error if in auto mode
+        if (autoMode && isActive) {
+          setTimeout(() => {
+            if (!isRecording && !isProcessing && isActive) {
+              startRecording();
+            }
+          }, 2000); // Slightly longer delay if there was an error
+        }
       }
     } catch (err) {
       console.error('Response generation error:', err);
       setError(`處理響應時出錯: ${err.message}`);
+      // Try to recover by starting recording again if in auto mode
+      if (autoMode && isActive) {
+        setTimeout(() => {
+          if (!isRecording && !isProcessing && isActive) {
+            startRecording();
+          }
+        }, 3000); // Even longer delay if there was a serious error
+      }
     } finally {
       setIsProcessing(false);
     }
@@ -131,6 +175,12 @@ const PatientSimulator = ({ isActive, onStart, onStop, onConversationUpdate }) =
 
   // Start recording audio
   const startRecording = async () => {
+    // Don't start recording if already recording or processing
+    if (isRecording || isProcessing) {
+      console.log('Cannot start recording: already recording or processing');
+      return;
+    }
+    
     try {
       setError('');
       setTranscribedText('');
@@ -149,6 +199,15 @@ const PatientSimulator = ({ isActive, onStart, onStop, onConversationUpdate }) =
         
         if (audioBlob.size < 100) {
           setError('錄音太短或沒有聲音被錄製。請再試一次。');
+          
+          // Try again automatically if in auto mode
+          if (autoMode && isActive) {
+            setTimeout(() => {
+              if (!isRecording && !isProcessing && isActive) {
+                startRecording();
+              }
+            }, 1000);
+          }
           return;
         }
         
@@ -160,8 +219,17 @@ const PatientSimulator = ({ isActive, onStart, onStop, onConversationUpdate }) =
           const text = await transcribeSpeech(audioBlob);
           
           if (!text || text.trim() === '') {
-            setError('無法識別您的語音，請再試一次或使用建議問題。');
+            setError('無法識別您的語音，請再試一次。');
             setIsProcessing(false);
+            
+            // Try again automatically if in auto mode
+            if (autoMode && isActive) {
+              setTimeout(() => {
+                if (!isRecording && !isProcessing && isActive) {
+                  startRecording();
+                }
+              }, 1500);
+            }
             return;
           }
           
@@ -182,6 +250,15 @@ const PatientSimulator = ({ isActive, onStart, onStop, onConversationUpdate }) =
         } catch (err) {
           console.error('Audio processing error:', err);
           setError(`音頻處理錯誤: ${err.message}`);
+          
+          // Try again automatically if in auto mode
+          if (autoMode && isActive) {
+            setTimeout(() => {
+              if (!isRecording && !isProcessing && isActive) {
+                startRecording();
+              }
+            }, 2000);
+          }
         } finally {
           setIsProcessing(false);
         }
@@ -189,6 +266,16 @@ const PatientSimulator = ({ isActive, onStart, onStop, onConversationUpdate }) =
       
       mediaRecorderRef.current.start();
       setIsRecording(true);
+      console.log('Recording started...');
+      
+      // Automatically stop recording after 10 seconds to prevent indefinite recording
+      setTimeout(() => {
+        if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+          console.log('Auto-stopping recording after timeout');
+          stopRecording();
+        }
+      }, 10000); // 10-second maximum recording time
+      
     } catch (err) {
       console.error('Microphone access error:', err);
       setError(`麥克風訪問錯誤: ${err.message}. 請確保麥克風已連接並且已授予訪問權限。`);
@@ -205,7 +292,14 @@ const PatientSimulator = ({ isActive, onStart, onStop, onConversationUpdate }) =
       if (mediaRecorderRef.current.stream) {
         mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop());
       }
+      
+      console.log('Recording stopped');
     }
+  };
+
+  // Toggle auto mode
+  const toggleAutoMode = () => {
+    setAutoMode(!autoMode);
   };
 
   // Clean up on component unmount
@@ -266,12 +360,34 @@ const PatientSimulator = ({ isActive, onStart, onStop, onConversationUpdate }) =
                 {isRecording ? '停止錄音' : '開始錄音'}
               </button>
               
+              <button 
+                className={`auto-btn ${autoMode ? 'active' : ''}`}
+                onClick={toggleAutoMode}
+                style={{
+                  marginLeft: '10px',
+                  padding: '10px 15px',
+                  backgroundColor: autoMode ? '#27ae60' : '#95a5a6',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '50px',
+                  cursor: 'pointer'
+                }}
+              >
+                {autoMode ? '自動模式: 開啟' : '自動模式: 關閉'}
+              </button>
+              
               <button className="stop-btn" onClick={onStop}>
                 結束模擬
               </button>
             </>
           )}
         </div>
+
+        {isProcessing && (
+          <div className="processing-indicator" style={{ marginTop: '10px', color: '#3498db' }}>
+            處理中...
+          </div>
+        )}
 
         {error && <div className="error-message">{error}</div>}
         
