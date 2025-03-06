@@ -7,7 +7,7 @@ import { transcribeSpeech } from '../services/speechToTextService';
 import { generateResponse } from '../services/gpt4Service';
 import { textToSpeech } from '../services/textToSpeechService';
 
-const PatientSimulator = ({ isActive, onStart, onStop, onConversationUpdate }) => {
+const PatientSimulator = ({ isActive, onStart, onStop, onConversationUpdate, onAudioRecorded }) => {
   const [isRecording, setIsRecording] = useState(false);
   const [transcribedText, setTranscribedText] = useState('');
   const [patientResponse, setPatientResponse] = useState('');
@@ -15,22 +15,11 @@ const PatientSimulator = ({ isActive, onStart, onStop, onConversationUpdate }) =
   const [error, setError] = useState('');
   const [conversationHistory, setConversationHistory] = useState([]);
   const [showSpeechTest, setShowSpeechTest] = useState(false);
-  const [autoMode, setAutoMode] = useState(true); // Default to auto mode
+  const [conversationAudio, setConversationAudio] = useState([]); // Track audio recordings
   
   const audioRef = useRef(null);
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
-
-  // Effect to start recording when simulation becomes active if in auto mode
-  useEffect(() => {
-    if (isActive && autoMode && !isRecording && !isProcessing) {
-      // Small delay to ensure UI has updated
-      const timer = setTimeout(() => {
-        startRecording();
-      }, 500);
-      return () => clearTimeout(timer);
-    }
-  }, [isActive, autoMode, isProcessing]);
 
   // Suggested questions based on the colonoscopy scenario
   const suggestedQuestions = [
@@ -105,23 +94,39 @@ const PatientSimulator = ({ isActive, onStart, onStop, onConversationUpdate }) =
         const audioUrl = await textToSpeech(response);
         audioRef.current.src = audioUrl;
         
+        // Capture the response audio for saving
+        try {
+          console.log('Fetching audio blob from URL');
+          const audioResponse = await fetch(audioUrl);
+          const audioBlob = await audioResponse.blob();
+          console.log('Audio blob created, size:', audioBlob.size);
+          
+          // Store the audio with its metadata
+          const audioEntry = {
+            role: 'patient',
+            blob: audioBlob,
+            timestamp: new Date().toISOString()
+          };
+          setConversationAudio(prev => [...prev, audioEntry]);
+          
+          // If audio recording tracking is enabled at App level
+          if (onAudioRecorded) {
+            console.log('Sending audio recording to parent');
+            onAudioRecorded(audioEntry);
+          }
+        } catch (blobError) {
+          console.error('Error capturing audio blob:', blobError);
+          // Continue without saving the audio
+        }
+        
         // Add event listeners for audio playback
         audioRef.current.onerror = (e) => {
           console.error('Audio playback error:', e);
           setError('音頻播放失敗。請閱讀文本回應。');
         };
         
-        // Auto-start recording after audio finishes playing
         audioRef.current.onended = () => {
           console.log('Audio playback finished successfully');
-          // Start recording automatically after a short delay if in auto mode
-          if (autoMode && isActive) {
-            setTimeout(() => {
-              if (!isRecording && !isProcessing && isActive) {
-                startRecording();
-              }
-            }, 1000); // 1 second delay before starting next recording
-          }
         };
         
         const playPromise = audioRef.current.play();
@@ -133,14 +138,6 @@ const PatientSimulator = ({ isActive, onStart, onStop, onConversationUpdate }) =
               audioRef.current.play().catch(e => {
                 console.error('Retry audio play error:', e);
                 setError('音頻播放失敗。請閱讀文本回應。');
-                // Still try to start recording on error if in auto mode
-                if (autoMode && isActive) {
-                  setTimeout(() => {
-                    if (!isRecording && !isProcessing && isActive) {
-                      startRecording();
-                    }
-                  }, 1000);
-                }
               });
             }, 1000);
           });
@@ -148,26 +145,11 @@ const PatientSimulator = ({ isActive, onStart, onStop, onConversationUpdate }) =
       } catch (audioErr) {
         console.error('Text-to-speech error:', audioErr);
         setError(`音頻生成錯誤: ${audioErr.message}`);
-        // Still try to start recording on error if in auto mode
-        if (autoMode && isActive) {
-          setTimeout(() => {
-            if (!isRecording && !isProcessing && isActive) {
-              startRecording();
-            }
-          }, 2000); // Slightly longer delay if there was an error
-        }
+        // We can still continue with the text response
       }
     } catch (err) {
       console.error('Response generation error:', err);
       setError(`處理響應時出錯: ${err.message}`);
-      // Try to recover by starting recording again if in auto mode
-      if (autoMode && isActive) {
-        setTimeout(() => {
-          if (!isRecording && !isProcessing && isActive) {
-            startRecording();
-          }
-        }, 3000); // Even longer delay if there was a serious error
-      }
     } finally {
       setIsProcessing(false);
     }
@@ -175,12 +157,6 @@ const PatientSimulator = ({ isActive, onStart, onStop, onConversationUpdate }) =
 
   // Start recording audio
   const startRecording = async () => {
-    // Don't start recording if already recording or processing
-    if (isRecording || isProcessing) {
-      console.log('Cannot start recording: already recording or processing');
-      return;
-    }
-    
     try {
       setError('');
       setTranscribedText('');
@@ -199,16 +175,20 @@ const PatientSimulator = ({ isActive, onStart, onStop, onConversationUpdate }) =
         
         if (audioBlob.size < 100) {
           setError('錄音太短或沒有聲音被錄製。請再試一次。');
-          
-          // Try again automatically if in auto mode
-          if (autoMode && isActive) {
-            setTimeout(() => {
-              if (!isRecording && !isProcessing && isActive) {
-                startRecording();
-              }
-            }, 1000);
-          }
           return;
+        }
+        
+        // Store the user's audio with its metadata
+        const userAudioEntry = {
+          role: 'nurse',
+          blob: audioBlob,
+          timestamp: new Date().toISOString()
+        };
+        setConversationAudio(prev => [...prev, userAudioEntry]);
+        
+        // If audio recording tracking is enabled at App level
+        if (onAudioRecorded) {
+          onAudioRecorded(userAudioEntry);
         }
         
         try {
@@ -221,15 +201,6 @@ const PatientSimulator = ({ isActive, onStart, onStop, onConversationUpdate }) =
           if (!text || text.trim() === '') {
             setError('無法識別您的語音，請再試一次。');
             setIsProcessing(false);
-            
-            // Try again automatically if in auto mode
-            if (autoMode && isActive) {
-              setTimeout(() => {
-                if (!isRecording && !isProcessing && isActive) {
-                  startRecording();
-                }
-              }, 1500);
-            }
             return;
           }
           
@@ -250,15 +221,6 @@ const PatientSimulator = ({ isActive, onStart, onStop, onConversationUpdate }) =
         } catch (err) {
           console.error('Audio processing error:', err);
           setError(`音頻處理錯誤: ${err.message}`);
-          
-          // Try again automatically if in auto mode
-          if (autoMode && isActive) {
-            setTimeout(() => {
-              if (!isRecording && !isProcessing && isActive) {
-                startRecording();
-              }
-            }, 2000);
-          }
         } finally {
           setIsProcessing(false);
         }
@@ -266,16 +228,6 @@ const PatientSimulator = ({ isActive, onStart, onStop, onConversationUpdate }) =
       
       mediaRecorderRef.current.start();
       setIsRecording(true);
-      console.log('Recording started...');
-      
-      // Automatically stop recording after 10 seconds to prevent indefinite recording
-      setTimeout(() => {
-        if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
-          console.log('Auto-stopping recording after timeout');
-          stopRecording();
-        }
-      }, 10000); // 10-second maximum recording time
-      
     } catch (err) {
       console.error('Microphone access error:', err);
       setError(`麥克風訪問錯誤: ${err.message}. 請確保麥克風已連接並且已授予訪問權限。`);
@@ -292,14 +244,7 @@ const PatientSimulator = ({ isActive, onStart, onStop, onConversationUpdate }) =
       if (mediaRecorderRef.current.stream) {
         mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop());
       }
-      
-      console.log('Recording stopped');
     }
-  };
-
-  // Toggle auto mode
-  const toggleAutoMode = () => {
-    setAutoMode(!autoMode);
   };
 
   // Clean up on component unmount
@@ -313,6 +258,34 @@ const PatientSimulator = ({ isActive, onStart, onStop, onConversationUpdate }) =
       }
     };
   }, []);
+
+  // Method to get all recorded audio (can be called from parent)
+  const getConversationAudio = () => {
+    console.log('Getting all conversation audio, count:', conversationAudio.length);
+    // Extract just the blobs from the audio entries
+    return conversationAudio
+      .filter(entry => entry && entry.blob instanceof Blob)
+      .map(entry => entry.blob);
+  };
+
+  // Expose the getConversationAudio method to parent through useEffect
+  useEffect(() => {
+    if (isActive && typeof onAudioRecorded === 'function') {
+      console.log('Registering audio getter with parent component');
+      // Allow parent to get all audio by calling this function
+      onAudioRecorded({
+        getAll: getConversationAudio
+      });
+    }
+    
+    // Clean up audio blobs when component is unmounted or simulation ends
+    return () => {
+      // Revoke any object URLs to prevent memory leaks
+      if (audioRef.current && audioRef.current.src.startsWith('blob:')) {
+        URL.revokeObjectURL(audioRef.current.src);
+      }
+    };
+  }, [isActive, onAudioRecorded]);
 
   return (
     <div className="patient-simulator">
@@ -360,34 +333,12 @@ const PatientSimulator = ({ isActive, onStart, onStop, onConversationUpdate }) =
                 {isRecording ? '停止錄音' : '開始錄音'}
               </button>
               
-              <button 
-                className={`auto-btn ${autoMode ? 'active' : ''}`}
-                onClick={toggleAutoMode}
-                style={{
-                  marginLeft: '10px',
-                  padding: '10px 15px',
-                  backgroundColor: autoMode ? '#27ae60' : '#95a5a6',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '50px',
-                  cursor: 'pointer'
-                }}
-              >
-                {autoMode ? '自動模式: 開啟' : '自動模式: 關閉'}
-              </button>
-              
               <button className="stop-btn" onClick={onStop}>
                 結束模擬
               </button>
             </>
           )}
         </div>
-
-        {isProcessing && (
-          <div className="processing-indicator" style={{ marginTop: '10px', color: '#3498db' }}>
-            處理中...
-          </div>
-        )}
 
         {error && <div className="error-message">{error}</div>}
         
