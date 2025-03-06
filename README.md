@@ -79,6 +79,49 @@ To build the application for production:
 npm run build
 ```
 
+### Deployment on Vercel
+
+This application is configured for easy deployment on Vercel:
+
+1. Create an account on [Vercel](https://vercel.com) if you don't have one
+2. Install the Vercel CLI (optional):
+   ```
+   npm install -g vercel
+   ```
+3. Deploy using one of these methods:
+
+   **Method 1: Using Vercel Dashboard (Recommended)**
+   
+   1. Push your code to a GitHub, GitLab, or Bitbucket repository
+   2. Log in to your Vercel account
+   3. Click "Add New" > "Project"
+   4. Select your repository
+   5. Configure the project:
+      - Framework Preset: Vite
+      - Build Command: `npm run build`
+      - Output Directory: `dist`
+      - Environment Variables: Add all your Azure API keys with the `VITE_` prefix
+   6. Click "Deploy"
+
+   **Method 2: Using Vercel CLI**
+   
+   1. Log in to Vercel CLI:
+      ```
+      vercel login
+      ```
+   2. Deploy from your project directory:
+      ```
+      vercel
+      ```
+   3. Follow the prompts to configure your project
+
+**Important Notes for Deployment:**
+
+- Make sure to add all environment variables in the Vercel dashboard under your project settings
+- All environment variables must be prefixed with `VITE_` (e.g., `VITE_AZURE_OPENAI_API_KEY`)
+- The application uses client-side environment variables, so they will be exposed in the browser
+- For production, consider implementing a backend proxy for API calls to keep your keys secure
+
 ## Usage
 
 1. Start the simulation by clicking the "開始模擬" (Start Simulation) button
