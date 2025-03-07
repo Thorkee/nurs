@@ -1,8 +1,8 @@
 # Colonoscopy Patient Simulation for Student Nurses in Hong Kong
 
-<div align="right">
+<div align="left">
   <a href="README.zh-hk.md">
-    <img src="https://img.shields.io/badge/%E4%B8%AD%E6%96%87-Cantonese-red" alt="繁體中文">
+    <img src="https://img.shields.io/badge/%E4%B8%AD%E6%96%87-Chinese (Traditional)-blue" alt="繁體中文">
   </a>
 </div>
 
