@@ -26,6 +26,25 @@ header h2 {
   font-weight: 400;
 }
 
+header nav {
+  margin-top: 15px;
+}
+
+header nav button {
+  background-color: #3498db;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 16px;
+  transition: background-color 0.3s;
+}
+
+header nav button:hover {
+  background-color: #2980b9;
+}
+
 main {
   display: flex;
   flex-direction: column;
@@ -33,28 +52,22 @@ main {
   flex: 1;
 }
 
-@media (min-width: 768px) {
-  main {
-    flex-direction: row;
-  }
-}
-
 .simulation-panel {
-  flex: 1;
   background-color: var(--white);
   border-radius: 8px;
   box-shadow: var(--shadow);
   padding: 1.5rem;
+  width: 100%;
 }
 
 .conversation-panel {
-  flex: 1;
   background-color: var(--white);
   border-radius: 8px;
   box-shadow: var(--shadow);
   padding: 1.5rem;
   display: flex;
   flex-direction: column;
+  width: 100%;
 }
 
 footer {
