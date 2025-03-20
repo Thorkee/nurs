@@ -7,59 +7,59 @@ const mouthPositions = {
     description: "Silence/Rest"
   },
   1: { // æ, ə, ʌ
-    path: "M50,75 Q65,85 80,75",
+    path: "M48,75 Q65,88 82,75",
     description: "Slight Open"
   },
   2: { // ɑ
-    path: "M50,80 Q65,95 80,80",
+    path: "M45,82 Q65,100 85,82",
     description: "Open"
   },
   3: { // ɔ
-    path: "M50,78 Q65,92 80,78",
+    path: "M48,80 Q65,98 82,80",
     description: "Rounded Open"
   },
   4: { // ɛ, ʊ
-    path: "M50,76 Q65,86 80,76",
+    path: "M48,78 Q65,92 82,78",
     description: "Mid Open"
   },
   5: { // ɝ
-    path: "M50,74 Q65,84 80,74",
+    path: "M48,75 Q65,90 82,75",
     description: "R-sound"
   },
   6: { // j, i, ɪ
-    path: "M45,70 Q65,74 85,70",
+    path: "M42,70 Q65,76 88,70",
     description: "Smile"
   },
   7: { // w, u
-    path: "M55,72 Q65,64 75,72",
+    path: "M55,72 Q65,60 75,72",
     description: "Rounded"
   },
   8: { // o
-    path: "M55,72 Q65,66 75,72",
+    path: "M55,72 Q65,62 75,72",
     description: "Small Rounded"
   },
   9: { // aʊ
-    path: "M50,78 Q65,88 80,78",
+    path: "M45,80 Q65,96 85,80",
     description: "Wide Open"
   },
   10: { // ɔɪ
-    path: "M52,75 Q65,83 78,75",
+    path: "M48,76 Q65,90 82,76",
     description: "Complex Round"
   },
   11: { // aɪ
-    path: "M50,76 Q65,88 80,76",
+    path: "M46,78 Q65,94 84,78",
     description: "Complex Open"
   },
   12: { // h
-    path: "M50,72 Q65,80 80,72",
+    path: "M48,74 Q65,86 82,74",
     description: "Breathing"
   },
   13: { // ɹ
-    path: "M50,72 Q65,78 80,72",
+    path: "M50,72 Q65,82 80,72",
     description: "R-sound"
   },
   14: { // l
-    path: "M50,70 Q65,76 80,70",
+    path: "M50,70 Q65,78 80,70",
     description: "L-sound"
   },
   15: { // s, z
@@ -67,19 +67,19 @@ const mouthPositions = {
     description: "S/Z Sound"
   },
   16: { // ʃ, tʃ, dʒ, ʒ
-    path: "M55,70 Q65,68 75,70",
+    path: "M55,70 Q65,66 75,70",
     description: "SH Sound"
   },
   17: { // ð
-    path: "M50,70 Q65,74 80,70",
+    path: "M48,70 Q65,76 82,70",
     description: "TH Sound"
   },
   18: { // f, v
-    path: "M50,69 Q65,63 80,69",
+    path: "M50,69 Q65,60 80,69",
     description: "F/V Sound"
   },
   19: { // d, t, n, θ
-    path: "M50,70 Q65,73 80,70",
+    path: "M50,70 Q65,74 80,70",
     description: "D/T Sound"
   },
   20: { // k, g, ŋ
@@ -87,7 +87,7 @@ const mouthPositions = {
     description: "K/G Sound"
   },
   21: { // p, b, m
-    path: "M55,70 Q65,67 75,70",
+    path: "M55,70 Q65,64 75,70",
     description: "P/B/M Sound"
   }
 };
@@ -269,6 +269,11 @@ const VisemeFace = ({ visemeData, audioUrl, isPlaying, onPlayComplete }) => {
     const fromPath = mouthPositions[currentViseme]?.path || mouthPositions[0].path;
     const toPath = mouthPositions[targetViseme]?.path || mouthPositions[0].path;
     
+    // Use same viseme if current equals target to avoid unnecessary interpolation
+    if (currentViseme === targetViseme) {
+      return fromPath;
+    }
+    
     // Simple path interpolation logic
     try {
       // Extract path coordinates (assumes paths are in form "M50,70 Q65,65 80,70")
@@ -300,7 +305,19 @@ const VisemeFace = ({ visemeData, audioUrl, isPlaying, onPlayComplete }) => {
         const y2 = fromY2 + (toY2 - fromY2) * visemeTransition;
         
         // Return the interpolated path
-        return `M${x1.toFixed(2)},${y1.toFixed(2)} Q${cx.toFixed(2)},${cy.toFixed(2)} ${x2.toFixed(2)},${y2.toFixed(2)}`;
+        const interpolatedPath = `M${x1.toFixed(2)},${y1.toFixed(2)} Q${cx.toFixed(2)},${cy.toFixed(2)} ${x2.toFixed(2)},${y2.toFixed(2)}`;
+        
+        // Debug log for the first few transitions
+        if (Math.random() < 0.05) {
+          console.log('Interpolating mouth:',
+            `From: ${fromPath} (viseme ${currentViseme})`,
+            `To: ${toPath} (viseme ${targetViseme})`,
+            `Progress: ${visemeTransition.toFixed(2)}`,
+            `Result: ${interpolatedPath}`
+          );
+        }
+        
+        return interpolatedPath;
       }
     } catch (error) {
       console.error("Error interpolating mouth path:", error);
@@ -319,13 +336,14 @@ const VisemeFace = ({ visemeData, audioUrl, isPlaying, onPlayComplete }) => {
     }
     
     if (newVisemeId !== targetViseme) {
+      console.log(`Transitioning from viseme ${currentViseme} to ${newVisemeId}`);
       setTargetViseme(newVisemeId);
       setVisemeTransition(0); // Start transition from 0
       setLastVisemeUpdateTime(now);
       
       // Clear any existing transition timer
       if (transitionTimerRef.current) {
-        clearInterval(transitionTimerRef.current);
+        cancelAnimationFrame(transitionTimerRef.current);
       }
       
       // Start transition animation
@@ -351,6 +369,7 @@ const VisemeFace = ({ visemeData, audioUrl, isPlaying, onPlayComplete }) => {
         } else {
           // When transition completes, set current viseme to target
           setCurrentViseme(newVisemeId);
+          console.log(`Completed transition to viseme ${newVisemeId}`);
           setVisemeTransition(1);
           transitionTimerRef.current = null;
         }
@@ -368,7 +387,14 @@ const VisemeFace = ({ visemeData, audioUrl, isPlaying, onPlayComplete }) => {
   
   // Run the normal animation based on audio timing
   const runAnimation = () => {
-    if (!audioRef.current || !processedVisemes.length) return;
+    if (!audioRef.current || !processedVisemes.length) {
+      console.log("Animation not running: missing audio or viseme data");
+      // Keep trying to animate if audio is playing
+      if (audioRef.current && !audioRef.current.paused) {
+        animationRef.current = requestAnimationFrame(runAnimation);
+      }
+      return;
+    }
     
     // Get current audio time in ms
     const currentTimeMs = audioRef.current.currentTime * 1000;
@@ -378,6 +404,11 @@ const VisemeFace = ({ visemeData, audioUrl, isPlaying, onPlayComplete }) => {
     
     // Calculate remaining time
     const remainingTimeMs = audioDurationMs - currentTimeMs;
+    
+    // Only log animation status occasionally
+    if (Math.random() < 0.01) {
+      console.log(`Animation running: time=${currentTimeMs.toFixed(0)}ms, remaining=${remainingTimeMs.toFixed(0)}ms, visemes=${processedVisemes.length}`);
+    }
     
     // Check if the audio is currently paused at punctuation
     const isPunctuationPause = checkForPunctuationPause(currentTimeMs);
@@ -489,9 +520,8 @@ const VisemeFace = ({ visemeData, audioUrl, isPlaying, onPlayComplete }) => {
       setVisemeWithTransition(processedVisemes[0].visemeId);
     }
     
-    // Continue animation loop if still playing or within buffer time of end
-    // Increase the buffer time to ensure animation completes
-    if (!audioRef.current.paused && (audioRef.current.currentTime < audioRef.current.duration + 0.5)) {
+    // Always continue the animation while audio is playing
+    if (!audioRef.current.paused) {
       animationRef.current = requestAnimationFrame(runAnimation);
     } else if (audioRef.current.ended || (audioRef.current.currentTime >= audioRef.current.duration - 0.1)) {
       // Ensure a smooth ending with a proper closure viseme
@@ -503,6 +533,8 @@ const VisemeFace = ({ visemeData, audioUrl, isPlaying, onPlayComplete }) => {
       if (onPlayComplete) onPlayComplete();
     } else {
       // Continue animation if not ended but somehow paused
+      // This is a fallback to ensure animation keeps running
+      console.log("Audio paused but animation continuing...");
       animationRef.current = requestAnimationFrame(runAnimation);
     }
   };
@@ -596,7 +628,14 @@ const VisemeFace = ({ visemeData, audioUrl, isPlaying, onPlayComplete }) => {
               if (animationRef.current) {
                 cancelAnimationFrame(animationRef.current);
               }
-              animationRef.current = requestAnimationFrame(runAnimation);
+              
+              // Force a refresh of the viseme state before starting animation
+              setCurrentViseme(1); // Force a non-zero viseme to ensure animation starts
+              setTimeout(() => {
+                setCurrentViseme(0); // Then back to neutral
+                // Start the animation loop
+                animationRef.current = requestAnimationFrame(runAnimation);
+              }, 50);
             })
             .catch(error => {
               console.error("VisemeFace: Audio play error:", error);
@@ -705,6 +744,7 @@ const VisemeFace = ({ visemeData, audioUrl, isPlaying, onPlayComplete }) => {
 
   // Determine current mouth path
   const mouthPath = getInterpolatedMouthPath();
+  console.log(`Rendering mouth with viseme=${currentViseme}, path=${mouthPath}, transition=${visemeTransition.toFixed(2)}`);
   const visemeDescription = mouthPositions[currentViseme]?.description || "Rest";
 
   // Enhance facial expression based on viseme
@@ -759,13 +799,20 @@ const VisemeFace = ({ visemeData, audioUrl, isPlaying, onPlayComplete }) => {
         {/* Eyebrows */}
         {renderEyebrows()}
         
-        {/* Mouth with interpolated position */}
+        {/* Mouth with interpolated position - increased stroke width for more visibility */}
         <path 
           d={mouthPath} 
           fill="none" 
           stroke="#D5795E" 
-          strokeWidth="2" 
+          strokeWidth="3" 
           strokeLinecap="round"
+        />
+        
+        {/* Add an inner mouth fill to make movements more visible */}
+        <path 
+          d={mouthPath}
+          fill="rgba(160, 60, 60, 0.2)" 
+          stroke="none"
         />
 
         {/* Nose */}

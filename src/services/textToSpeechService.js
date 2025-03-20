@@ -527,10 +527,12 @@ async function processChunksWithViseme(text, speechKey, speechRegion, voiceName)
  */
 function generateManualVisemes(textLength, startOffset = 0) {
   const visemeData = [];
-  const avgDuration = 50; // Average duration for each viseme in ms (decreased from 70 to 50 for more frequent updates)
+  const avgDuration = 40; // Average duration for each viseme in ms (decreased from 50 to 40 for more frequent updates)
   
   // Estimate number of visemes based on text length - increase for more continuous animation
-  const numVisemes = Math.max(30, Math.ceil(textLength * 1.5)); // Increased multiplier from 0.8 to 1.5
+  const numVisemes = Math.max(40, Math.ceil(textLength * 2.0)); // Increased multiplier from 1.5 to 2.0
+  
+  console.log(`Generating ${numVisemes} visemes for text length ${textLength}`);
   
   // Add initial neutral viseme
   visemeData.push({
@@ -551,8 +553,9 @@ function generateManualVisemes(textLength, startOffset = 0) {
     if (prevVisemeId === 0) {
       // If previous was neutral/closed, open mouth with higher probability
       visemeId = Math.floor(Math.random() * 5) + 1; // 1-5 (open mouth visemes)
-    } else if (i % 8 === 0) {
-      // Occasionally return to neutral position (viseme 0) to simulate pauses
+    } else if (i % 10 === 0) {
+      // Less frequently return to neutral position (viseme 0) to simulate pauses
+      // Changed from every 8th to every 10th viseme
       visemeId = 0;
     } else if (i % 3 === 0) {
       // Every third viseme, use one of the more common mouth shapes
@@ -565,14 +568,14 @@ function generateManualVisemes(textLength, startOffset = 0) {
       const rareVisemes = [15, 16, 17, 18, 19, 20, 21]; // Rarely used
       
       const random = Math.random();
-      if (random < 0.7) {
-        // 70% chance of common viseme
+      if (random < 0.6) { // Reduced from 0.7 to 0.6 to increase variety
+        // 60% chance of common viseme
         visemeId = commonVisemes[Math.floor(Math.random() * commonVisemes.length)];
-      } else if (random < 0.9) {
-        // 20% chance of less common viseme
+      } else if (random < 0.85) { // Reduced from 0.9 to 0.85 to increase variety
+        // 25% chance of less common viseme
         visemeId = lessCommonVisemes[Math.floor(Math.random() * lessCommonVisemes.length)];
       } else {
-        // 10% chance of rare viseme
+        // 15% chance of rare viseme
         visemeId = rareVisemes[Math.floor(Math.random() * rareVisemes.length)];
       }
     }
@@ -586,11 +589,27 @@ function generateManualVisemes(textLength, startOffset = 0) {
     });
   }
   
-  // Ensure we end with neutral viseme 0
+  // Make sure we're not ending with viseme 0 in case that was the last randomly chosen one
+  if (visemeData[visemeData.length - 1].visemeId === 0) {
+    // Replace with a more visible closing viseme
+    visemeData[visemeData.length - 1].visemeId = 1;
+  }
+  
+  // Add a final neutral viseme 0 at the end
   visemeData.push({
     visemeId: 0, 
     audioOffset: startOffset + (numVisemes * avgDuration)
   });
+  
+  // Log some statistics about the generated visemes
+  const visemeCounts = {};
+  visemeData.forEach(v => {
+    visemeCounts[v.visemeId] = (visemeCounts[v.visemeId] || 0) + 1;
+  });
+  
+  console.log("Generated viseme counts:", visemeCounts);
+  console.log("First few visemes:", visemeData.slice(0, 5));
+  console.log("Last few visemes:", visemeData.slice(-5));
   
   return visemeData;
 } 
