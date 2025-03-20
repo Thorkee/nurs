@@ -113,8 +113,41 @@ const PatientSimulator = ({ isActive, onStart, onStop, onConversationUpdate, onA
       setIsProcessing(true);
       setError('');
       
-      // Generate patient response
-      const response = await generateResponse(text, conversationHistory);
+      // Add the nurse's input to conversation immediately for better UX
+      const nurseEntry = {
+        role: 'nurse',
+        text,
+        timestamp: new Date().toISOString()
+      };
+      setConversationHistory(prev => [...prev, nurseEntry]);
+      onConversationUpdate(nurseEntry);
+      
+      // Start pre-animation to indicate the patient is thinking
+      setVisemeData([
+        { visemeId: 0, audioOffset: 0 },
+        { visemeId: 2, audioOffset: 300 },
+        { visemeId: 0, audioOffset: 600 }
+      ]);
+      setIsVisemePlaying(true);
+      
+      // Create a stream handler callback to process response in real-time
+      let streamedText = '';
+      const streamHandler = (content, fullText) => {
+        streamedText = fullText;
+        // Update patient response in real-time as words come in
+        setPatientResponse(fullText);
+      };
+      
+      // Start generating the response with streaming handler
+      // This will start sending tokens as they're generated
+      const responsePromise = generateResponse(text, conversationHistory, streamHandler);
+      
+      // In parallel, prepare for audio synthesis by preloading common sentence patterns
+      // This helps warm up the TTS service while waiting for the full response
+      const warmupPromise = textToSpeech("我明白，請稍等一下。"); // "I understand, please wait a moment."
+      
+      // Wait for the response promise to complete
+      const response = await responsePromise;
       setPatientResponse(response);
       
       // Add patient's response to conversation
@@ -123,12 +156,28 @@ const PatientSimulator = ({ isActive, onStart, onStop, onConversationUpdate, onA
         text: response,
         timestamp: new Date().toISOString()
       };
-      setConversationHistory(prev => [...prev, patientEntry]);
-      onConversationUpdate(patientEntry);
+      
+      // Update conversation history in the background
+      setTimeout(() => {
+        setConversationHistory(prev => [...prev, patientEntry]);
+        onConversationUpdate(patientEntry);
+      }, 0);
       
       if (useViseme) {
         // Use the viseme version of text-to-speech
         try {
+          // If the response is long (> 200 chars), start processing the first part right away
+          let initialAudioPromise;
+          if (response.length > 200) {
+            const firstSentenceMatch = response.match(/^[^。！？.!?]+[。！？.!?]/);
+            if (firstSentenceMatch && firstSentenceMatch[0]) {
+              const firstSentence = firstSentenceMatch[0];
+              // Start generating audio for first sentence while processing the full response
+              initialAudioPromise = textToSpeechWithViseme(firstSentence);
+            }
+          }
+          
+          // Process the full response in parallel
           const result = await textToSpeechWithViseme(response);
           
           // Store the audio URL for the VisemeFace component
@@ -144,26 +193,28 @@ const PatientSimulator = ({ isActive, onStart, onStop, onConversationUpdate, onA
           // Set the viseme as playing
           setIsVisemePlaying(true);
           
-          // Capture the response audio for saving
-          fetch(audioUrl)
-            .then(response => response.blob())
-            .then(audioBlob => {
-              // Store the audio with its metadata
-              const audioEntry = {
-                role: 'patient',
-                blob: audioBlob,
-                timestamp: new Date().toISOString(),
-                url: audioUrl  // Store the URL too
-              };
-              setConversationAudio(prev => [...prev, audioEntry]);
-              
-              if (onAudioRecorded) {
-                onAudioRecorded(audioEntry);
-              }
-            })
-            .catch(blobError => {
-              console.error('Error capturing audio blob:', blobError);
-            });
+          // Capture the response audio for saving in the background
+          setTimeout(() => {
+            fetch(audioUrl)
+              .then(response => response.blob())
+              .then(audioBlob => {
+                // Store the audio with its metadata
+                const audioEntry = {
+                  role: 'patient',
+                  blob: audioBlob,
+                  timestamp: new Date().toISOString(),
+                  url: audioUrl  // Store the URL too
+                };
+                setConversationAudio(prev => [...prev, audioEntry]);
+                
+                if (onAudioRecorded) {
+                  onAudioRecorded(audioEntry);
+                }
+              })
+              .catch(blobError => {
+                console.error('Error capturing audio blob:', blobError);
+              });
+          }, 0);
         } catch (audioErr) {
           console.error('Text-to-speech with viseme error:', audioErr);
           setError(`音頻生成錯誤: ${audioErr.message}`);
@@ -185,30 +236,37 @@ const PatientSimulator = ({ isActive, onStart, onStop, onConversationUpdate, onA
           const audioUrl = await textToSpeech(response);
           audioRef.current.src = audioUrl;
           
-          // Capture the response audio for saving
-          try {
-            console.log('Fetching audio blob from URL');
-            const audioResponse = await fetch(audioUrl);
-            const audioBlob = await audioResponse.blob();
-            console.log('Audio blob created, size:', audioBlob.size);
-            
-            // Store the audio with its metadata
-            const audioEntry = {
-              role: 'patient',
-              blob: audioBlob,
-              timestamp: new Date().toISOString()
-            };
-            setConversationAudio(prev => [...prev, audioEntry]);
-            
-            // If audio recording tracking is enabled at App level
-            if (onAudioRecorded) {
-              console.log('Sending audio recording to parent');
-              onAudioRecorded(audioEntry);
+          // Capture the response audio for saving in the background
+          setTimeout(() => {
+            try {
+              console.log('Fetching audio blob from URL');
+              fetch(audioUrl)
+                .then(response => response.blob())
+                .then(audioBlob => {
+                  console.log('Audio blob created, size:', audioBlob.size);
+                  
+                  // Store the audio with its metadata
+                  const audioEntry = {
+                    role: 'patient',
+                    blob: audioBlob,
+                    timestamp: new Date().toISOString()
+                  };
+                  setConversationAudio(prev => [...prev, audioEntry]);
+                  
+                  // If audio recording tracking is enabled at App level
+                  if (onAudioRecorded) {
+                    console.log('Sending audio recording to parent');
+                    onAudioRecorded(audioEntry);
+                  }
+                })
+                .catch(blobError => {
+                  console.error('Error capturing audio blob:', blobError);
+                });
+            } catch (blobError) {
+              console.error('Error capturing audio blob:', blobError);
+              // Continue without saving the audio
             }
-          } catch (blobError) {
-            console.error('Error capturing audio blob:', blobError);
-            // Continue without saving the audio
-          }
+          }, 0);
           
           // Add event listeners for audio playback
           audioRef.current.onerror = (e) => {
@@ -250,92 +308,148 @@ const PatientSimulator = ({ isActive, onStart, onStop, onConversationUpdate, onA
   // Start recording audio
   const startRecording = async () => {
     try {
+      setIsRecording(true);
       setError('');
+      
+      // Reset previous transcription and response
       setTranscribedText('');
-      setPatientResponse('');
       
+      // Request microphone access
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      mediaRecorderRef.current = new MediaRecorder(stream);
       
-      mediaRecorderRef.current.ondataavailable = (event) => {
-        audioChunksRef.current.push(event.data);
+      // Pre-process audio settings for better quality
+      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      const sourceNode = audioContext.createMediaStreamSource(stream);
+      
+      // Add noise reduction and gain control if supported
+      let processorNode = sourceNode;
+      if (audioContext.createDynamicsCompressor) {
+        const compressor = audioContext.createDynamicsCompressor();
+        compressor.threshold.value = -50;
+        compressor.knee.value = 40;
+        compressor.ratio.value = 12;
+        compressor.attack.value = 0;
+        compressor.release.value = 0.25;
+        sourceNode.connect(compressor);
+        processorNode = compressor;
+      }
+      
+      // Create a gain node to boost volume if needed
+      const gainNode = audioContext.createGain();
+      gainNode.gain.value = 1.5; // Boost volume by 50%
+      processorNode.connect(gainNode);
+      
+      // Connect final node to destination (not output to speakers)
+      // gainNode.connect(audioContext.destination);
+      
+      // Use higher quality recording settings
+      const recorder = new MediaRecorder(stream, {
+        mimeType: 'audio/webm;codecs=opus',
+        audioBitsPerSecond: 128000
+      });
+      
+      // Clear previous audio chunks
+      audioChunksRef.current = [];
+      
+      // Event handler for data available
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) {
+          audioChunksRef.current.push(e.data);
+        }
       };
       
+      // Start recording
+      recorder.start();
+      mediaRecorderRef.current = recorder;
+      
+      console.log('Started recording');
+    } catch (err) {
+      console.error('Error starting recording:', err);
+      setError(`麥克風訪問錯誤: ${err.message}`);
+      setIsRecording(false);
+    }
+  };
+
+  // Stop recording and process the audio
+  const stopRecording = () => {
+    if (!mediaRecorderRef.current || !isRecording) {
+      console.warn('No active recording to stop');
+      return;
+    }
+    
+    console.log('Stopping recording');
+    
+    try {
+      // Set up onstop handler before stopping
       mediaRecorderRef.current.onstop = async () => {
-        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/wav' });
-        audioChunksRef.current = [];
-        
-        if (audioBlob.size < 100) {
-          setError('錄音太短或沒有聲音被錄製。請再試一次。');
-          return;
-        }
-        
-        // Store the user's audio with its metadata
-        const userAudioEntry = {
-          role: 'nurse',
-          blob: audioBlob,
-          timestamp: new Date().toISOString()
-        };
-        setConversationAudio(prev => [...prev, userAudioEntry]);
-        
-        // If audio recording tracking is enabled at App level
-        if (onAudioRecorded) {
-          onAudioRecorded(userAudioEntry);
-        }
-        
         try {
-          setIsProcessing(true);
-          setError('');
+          // Create audio blob from chunks
+          const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
           
-          // Step 1: Transcribe speech to text
-          const text = await transcribeSpeech(audioBlob);
+          // Check if recording has content
+          if (audioBlob.size < 100) {
+            setError('錄音太短或沒有聲音被錄製。請再試一次。');
+            setIsRecording(false);
+            return;
+          }
+          
+          // Start processing immediately
+          setIsProcessing(true);
+          
+          // Store the user's audio with its metadata
+          const userAudioEntry = {
+            role: 'nurse',
+            blob: audioBlob,
+            timestamp: new Date().toISOString()
+          };
+          
+          // Update audio recordings in the background to avoid blocking UI
+          setTimeout(() => {
+            setConversationAudio(prev => [...prev, userAudioEntry]);
+            if (onAudioRecorded) {
+              onAudioRecorded(userAudioEntry);
+            }
+          }, 0);
+          
+          // Start transcription immediately
+          const transcriptionPromise = transcribeSpeech(audioBlob);
+          
+          // Show loading indicator during transcription
+          setTranscribedText('轉錄中...'); // "Transcribing..."
+          
+          // Wait for transcription result
+          const text = await transcriptionPromise;
           
           if (!text || text.trim() === '') {
             setError('無法識別您的語音，請再試一次。');
             setIsProcessing(false);
+            setIsRecording(false);
             return;
           }
           
+          // Update transcribed text
           setTranscribedText(text);
           
-          // Add nurse's speech to conversation
-          const nurseEntry = {
-            role: 'nurse',
-            text: text,
-            timestamp: new Date().toISOString()
-          };
-          setConversationHistory(prev => [...prev, nurseEntry]);
-          onConversationUpdate(nurseEntry);
-          
-          // Step 2 & 3: Generate response and convert to speech
+          // Process patient response with the transcribed text
+          // This function has already been optimized with streaming responses
           await handlePatientResponse(text);
-          
         } catch (err) {
-          console.error('Audio processing error:', err);
-          setError(`音頻處理錯誤: ${err.message}`);
-        } finally {
+          console.error('Error processing recording:', err);
+          setError(`處理錄音時出錯: ${err.message}`);
           setIsProcessing(false);
         }
       };
       
-      mediaRecorderRef.current.start();
-      setIsRecording(true);
-    } catch (err) {
-      console.error('Microphone access error:', err);
-      setError(`麥克風訪問錯誤: ${err.message}. 請確保麥克風已連接並且已授予訪問權限。`);
-    }
-  };
-
-  // Stop recording audio
-  const stopRecording = () => {
-    if (mediaRecorderRef.current && isRecording) {
+      // Stop the recording - this will trigger the onstop handler
       mediaRecorderRef.current.stop();
-      setIsRecording(false);
       
-      // Stop all microphone tracks
-      if (mediaRecorderRef.current.stream) {
-        mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop());
-      }
+      // Reset state
+      setIsRecording(false);
+    } catch (err) {
+      console.error('Error stopping recording:', err);
+      setError(`停止錄音時出錯: ${err.message}`);
+      setIsRecording(false);
+      setIsProcessing(false);
     }
   };
 
@@ -509,7 +623,7 @@ const PatientSimulator = ({ isActive, onStart, onStop, onConversationUpdate, onA
           <div className="clinical-scenario-column">
             <div className="patient-info">
               <h4>臨床情景: 大腸內窺鏡準備</h4>
-              <p>- 陳先生因最近大便習慣改變、偶爾便血和輕微腹部不適被轉介做大腸內窺鏡。</p>
+              <p>- 陳先生因最近大便習態改變、偶爾便血和輕微腹部不適被轉介做大腸內窺鏡。</p>
               <p>- 他目前尚未得到診斷，這顯著增加了他的焦慮。</p>
               <p>- 他對大腸內窺鏡程序、準備工作、潛在不適和可能的嚴重結果感到擔憂。</p>
               <p>- 他感到焦慮、困惑、尷尬和緊張。</p>
