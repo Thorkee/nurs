@@ -28,6 +28,9 @@ const PatientSimulator = ({ isActive, onStart, onStop, onConversationUpdate, onA
   const audioChunksRef = useRef([]);
   const controlPanelRef = useRef(null); // Reference for the control panel element
 
+  // Also need to add global audioCache reference
+  const audioCache = useRef(null);
+
   // Function to toggle fullscreen mode
   const toggleFullscreen = () => {
     if (!isFullscreen) {
@@ -122,32 +125,42 @@ const PatientSimulator = ({ isActive, onStart, onStop, onConversationUpdate, onA
       setConversationHistory(prev => [...prev, nurseEntry]);
       onConversationUpdate(nurseEntry);
       
-      // Reset viseme animation first
-      // This ensures any previous animation is stopped properly
-      setIsVisemePlaying(false);
-      setVisemeData([]);
-      
-      // Clear any previous audio URL to prevent playback of old audio
-      if (currentAudioUrl && currentAudioUrl.startsWith('blob:')) {
-        try {
-          URL.revokeObjectURL(currentAudioUrl);
-          console.log("Revoked previous audio URL:", currentAudioUrl);
-        } catch (e) {
-          console.warn("Error revoking previous audio URL:", e);
+      // Clear previous audio to prevent it from playing
+      if (audioRef.current) {
+        // Stop any currently playing audio
+        audioRef.current.pause();
+        audioRef.current.src = '';
+        
+        // If we have a current audio URL, revoke it to free up memory
+        if (currentAudioUrl) {
+          // We need to be careful not to revoke cached URLs
+          const isCachedUrl = Array.from(audioCache?.values() || []).some(
+            cache => cache.url === currentAudioUrl
+          );
+          
+          if (!isCachedUrl) {
+            try {
+              URL.revokeObjectURL(currentAudioUrl);
+            } catch (e) {
+              console.warn('Error revoking URL:', e);
+            }
+          }
         }
-        setCurrentAudioUrl('');
       }
       
-      // Now set pre-animation (after stopping previous animation)
-      setTimeout(() => {
-        // Start pre-animation to indicate the patient is thinking
-        setVisemeData([
-          { visemeId: 0, audioOffset: 0 },
-          { visemeId: 2, audioOffset: 300 },
-          { visemeId: 0, audioOffset: 600 }
-        ]);
-        setIsVisemePlaying(true);
-      }, 50); // Small delay to ensure previous animation is cleared
+      // Reset the current audio URL to prevent playing old audio
+      setCurrentAudioUrl('');
+      
+      // Stop any currently playing viseme animation
+      setIsVisemePlaying(false);
+      
+      // Start pre-animation to indicate the patient is thinking
+      setVisemeData([
+        { visemeId: 0, audioOffset: 0 },
+        { visemeId: 2, audioOffset: 300 },
+        { visemeId: 0, audioOffset: 600 }
+      ]);
+      setIsVisemePlaying(true);
       
       // Create a stream handler callback to process response in real-time
       let streamedText = '';
@@ -187,6 +200,7 @@ const PatientSimulator = ({ isActive, onStart, onStop, onConversationUpdate, onA
         try {
           // If the response is long (> 200 chars), start processing the first part right away
           let initialAudioPromise;
+          let initialAudioResult;
           if (response.length > 200) {
             const firstSentenceMatch = response.match(/^[^。！？.!?]+[。！？.!?]/);
             if (firstSentenceMatch && firstSentenceMatch[0]) {
@@ -199,47 +213,47 @@ const PatientSimulator = ({ isActive, onStart, onStop, onConversationUpdate, onA
           // Process the full response in parallel
           const result = await textToSpeechWithViseme(response);
           
-          // Stop any previous animation before setting new one
-          setIsVisemePlaying(false);
+          // Store the audio URL for the VisemeFace component
+          const audioUrl = result.audioUrl;
+          console.log("PatientSimulator: Received audio URL from TTS:", audioUrl);
           
-          // Small delay to ensure previous animation is stopped
+          // Make sure previous audio is stopped before setting new audio
+          if (audioRef.current) {
+            audioRef.current.pause();
+            audioRef.current.src = '';
+          }
+          
+          // Set the current audio URL for the VisemeFace component
+          setCurrentAudioUrl(audioUrl);
+          
+          // First set the viseme data
+          setVisemeData(result.visemeData);
+          
+          // Set the viseme as playing
+          setIsVisemePlaying(true);
+          
+          // Capture the response audio for saving in the background
           setTimeout(() => {
-            // Store the audio URL for the VisemeFace component
-            const audioUrl = result.audioUrl;
-            console.log("PatientSimulator: Received audio URL from TTS:", audioUrl);
-            
-            // Set the current audio URL for the VisemeFace component
-            setCurrentAudioUrl(audioUrl);
-            
-            // First set the viseme data
-            setVisemeData(result.visemeData);
-            
-            // Set the viseme as playing
-            setIsVisemePlaying(true);
-            
-            // Capture the response audio for saving in the background
-            setTimeout(() => {
-              fetch(audioUrl)
-                .then(response => response.blob())
-                .then(audioBlob => {
-                  // Store the audio with its metadata
-                  const audioEntry = {
-                    role: 'patient',
-                    blob: audioBlob,
-                    timestamp: new Date().toISOString(),
-                    url: audioUrl  // Store the URL too
-                  };
-                  setConversationAudio(prev => [...prev, audioEntry]);
-                  
-                  if (onAudioRecorded) {
-                    onAudioRecorded(audioEntry);
-                  }
-                })
-                .catch(blobError => {
-                  console.error('Error capturing audio blob:', blobError);
-                });
-            }, 0);
-          }, 50);
+            fetch(audioUrl)
+              .then(response => response.blob())
+              .then(audioBlob => {
+                // Store the audio with its metadata
+                const audioEntry = {
+                  role: 'patient',
+                  blob: audioBlob,
+                  timestamp: new Date().toISOString(),
+                  url: audioUrl  // Store the URL too
+                };
+                setConversationAudio(prev => [...prev, audioEntry]);
+                
+                if (onAudioRecorded) {
+                  onAudioRecorded(audioEntry);
+                }
+              })
+              .catch(blobError => {
+                console.error('Error capturing audio blob:', blobError);
+              });
+          }, 0);
         } catch (audioErr) {
           console.error('Text-to-speech with viseme error:', audioErr);
           setError(`音頻生成錯誤: ${audioErr.message}`);
@@ -249,80 +263,14 @@ const PatientSimulator = ({ isActive, onStart, onStop, onConversationUpdate, onA
           try {
             const audioUrl = await textToSpeech(response);
             
-            // Clear previous audio before setting new one
+            // Clear previous audio
             if (audioRef.current) {
               audioRef.current.pause();
-              audioRef.current.currentTime = 0;
-              
-              if (audioRef.current.src && audioRef.current.src.startsWith('blob:')) {
-                const oldSrc = audioRef.current.src;
-                audioRef.current.src = '';
-                try {
-                  URL.revokeObjectURL(oldSrc);
-                } catch (e) {
-                  console.warn("Error revoking old audio URL:", e);
-                }
-              }
-              
-              // Set new source
-              audioRef.current.src = audioUrl;
+              audioRef.current.src = '';
             }
             
-            // Capture the response audio for saving in the background
-            setTimeout(() => {
-              try {
-                console.log('Fetching audio blob from URL');
-                fetch(audioUrl)
-                  .then(response => response.blob())
-                  .then(audioBlob => {
-                    console.log('Audio blob created, size:', audioBlob.size);
-                    
-                    // Store the audio with its metadata
-                    const audioEntry = {
-                      role: 'patient',
-                      blob: audioBlob,
-                      timestamp: new Date().toISOString()
-                    };
-                    setConversationAudio(prev => [...prev, audioEntry]);
-                    
-                    // If audio recording tracking is enabled at App level
-                    if (onAudioRecorded) {
-                      console.log('Sending audio recording to parent');
-                      onAudioRecorded(audioEntry);
-                    }
-                  })
-                  .catch(blobError => {
-                    console.error('Error capturing audio blob:', blobError);
-                  });
-              } catch (blobError) {
-                console.error('Error capturing audio blob:', blobError);
-                // Continue without saving the audio
-              }
-            }, 0);
-            
-            // Add event listeners for audio playback
-            audioRef.current.onerror = (e) => {
-              console.error('Audio playback error:', e);
-              setError('音頻播放失敗。請閱讀文本回應。');
-            };
-            
-            audioRef.current.onended = () => {
-              console.log('Audio playback finished successfully');
-            };
-            
-            const playPromise = audioRef.current.play();
-            if (playPromise !== undefined) {
-              playPromise.catch(err => {
-                console.error('Audio play error:', err);
-                // Try playing again after a short delay
-                setTimeout(() => {
-                  audioRef.current.play().catch(e => {
-                    console.error('Retry audio play error:', e);
-                    setError('音頻播放失敗。請閱讀文本回應。');
-                  });
-                }, 1000);
-              });
-            }
+            audioRef.current.src = audioUrl;
+            audioRef.current.play().catch(e => console.error(e));
           } catch (e) {
             console.error('Fallback speech synthesis failed:', e);
             setError(`備用語音合成失敗: ${e.message}`);
@@ -333,24 +281,13 @@ const PatientSimulator = ({ isActive, onStart, onStop, onConversationUpdate, onA
         try {
           const audioUrl = await textToSpeech(response);
           
-          // Clear previous audio before setting new one
+          // Clear previous audio
           if (audioRef.current) {
             audioRef.current.pause();
-            audioRef.current.currentTime = 0;
-            
-            if (audioRef.current.src && audioRef.current.src.startsWith('blob:')) {
-              const oldSrc = audioRef.current.src;
-              audioRef.current.src = '';
-              try {
-                URL.revokeObjectURL(oldSrc);
-              } catch (e) {
-                console.warn("Error revoking old audio URL:", e);
-              }
-            }
-            
-            // Set new source
-            audioRef.current.src = audioUrl;
+            audioRef.current.src = '';
           }
+          
+          audioRef.current.src = audioUrl;
           
           // Capture the response audio for saving in the background
           setTimeout(() => {
@@ -625,6 +562,20 @@ const PatientSimulator = ({ isActive, onStart, onStop, onConversationUpdate, onA
         }
       }
     };
+  }, []);
+
+  // At the beginning of the component, after refs
+  useEffect(() => {
+    // Get a reference to the audio cache from the textToSpeechService
+    try {
+      import('../services/textToSpeechService').then(module => {
+        if (module._getAudioCache) {
+          audioCache.current = module._getAudioCache();
+        }
+      });
+    } catch (e) {
+      console.warn('Could not access audio cache:', e);
+    }
   }, []);
 
   return (

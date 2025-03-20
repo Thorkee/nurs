@@ -107,10 +107,6 @@ const VisemeFace = ({ visemeData, audioUrl, isPlaying, onPlayComplete }) => {
   const animationRef = useRef(null);
   const transitionTimerRef = useRef(null);
   const blinkTimerRef = useRef(null);
-  const prevAudioUrlRef = useRef('');
-  const startTimeRef = useRef(null);
-  const prevAnimationTime = useRef(0);
-  const isError = useRef(false);
   
   // Add blinking effect
   useEffect(() => {
@@ -511,214 +507,152 @@ const VisemeFace = ({ visemeData, audioUrl, isPlaying, onPlayComplete }) => {
     return false;
   };
   
-  // UseEffect for handling audio playback
+  // Start the animation when isPlaying changes
   useEffect(() => {
-    // Early return if needed properties are missing
-    if (!audioRef.current || !audioUrl || visemeData.length === 0) {
-      // Clean up animation if it was running
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current);
-        animationRef.current = null;
-      }
-      return;
-    }
-
-    // Only proceed with new audio setup if isPlaying is true
-    if (!isPlaying) {
-      // If not playing, pause any existing audio
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current.currentTime = 0;
-      }
-      return;
-    }
-    
-    let prevAudioUrl = audioRef.current.src;
-    
-    // Clean up previous audio and prepare for new audio
-    if (audioRef.current) {
-      // Stop any existing playback
-      audioRef.current.pause();
-      audioRef.current.currentTime = 0;
+    if (isPlaying && audioUrl) {
+      console.log("VisemeFace: isPlaying=true and audioUrl is available:", audioUrl);
+      setAnimationMode('normal');
       
-      // Remove all event listeners before setting new ones
-      const oldAudio = audioRef.current;
-      oldAudio.oncanplay = null;
-      oldAudio.onended = null;
-      oldAudio.ontimeupdate = null;
-      oldAudio.onerror = null;
-      
-      // Clear the source and revoke previous object URL to prevent memory leaks
-      if (prevAudioUrl && prevAudioUrl.startsWith('blob:')) {
-        // Clear source first
-        audioRef.current.src = '';
-        try {
-          URL.revokeObjectURL(prevAudioUrl);
-          console.log('Revoked previous audio URL in VisemeFace');
-        } catch (e) {
-          console.warn('Error revoking previous URL:', e);
-        }
-      }
-    }
-    
-    console.log('Setting up new audio in VisemeFace with URL:', audioUrl);
-    
-    // Set up audio with the new URL
-    audioRef.current.src = audioUrl;
-    audioRef.current.load(); // Force load the new audio
-    
-    // Clean up any existing animation frame
-    if (animationRef.current) {
-      cancelAnimationFrame(animationRef.current);
-      animationRef.current = null;
-    }
-    
-    // Setup audio event listeners
-    audioRef.current.oncanplay = () => {
-      console.log('Audio can now play in VisemeFace');
-      
-      // Start animation from the beginning
-      prevAnimationTime.current = 0;
-      startTimeRef.current = null;
-      
-      // Set initial viseme
-      setCurrentViseme(visemeData[0]?.visemeId || 0);
-      
-      try {
-        // Play the audio
-        const playPromise = audioRef.current.play();
-        if (playPromise !== undefined) {
-          playPromise.catch(err => {
-            console.error('Audio play error in VisemeFace:', err);
-            // Try again after a short delay
-            setTimeout(() => {
-              audioRef.current.play().catch(e => {
-                console.error('Retry audio play error in VisemeFace:', e);
-                isError.current = true;
-              });
-            }, 500);
-          });
-        }
-        
-        // Start animation after a short delay to allow audio to begin
-        setTimeout(() => {
-          // Start the animation
-          if (!animationRef.current) {
-            animationRef.current = requestAnimationFrame(runAnimation);
-          }
-        }, 50);
-      } catch (e) {
-        console.error('Error starting audio in VisemeFace:', e);
-        isError.current = true;
-      }
-    };
-    
-    audioRef.current.onended = () => {
-      console.log('Audio playback ended in VisemeFace');
-      
-      // Clean up animation
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current);
-        animationRef.current = null;
-      }
-      
-      // Reset to neutral viseme
+      // Reset to initial state
       setCurrentViseme(0);
+      setVisemeIndex(0);
       
-      // Signal that playback is complete
-      if (onPlayComplete) {
-        onPlayComplete();
-      }
-    };
-    
-    audioRef.current.onerror = (e) => {
-      console.error('Audio error in VisemeFace:', e);
-      isError.current = true;
-      
-      // Clean up animation
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current);
-        animationRef.current = null;
-      }
-      
-      // Signal playback complete despite error
-      if (onPlayComplete) {
-        onPlayComplete();
-      }
-    };
-    
-    // Backup timeout to ensure animation completes even if audio ends unexpectedly
-    const timeoutId = setTimeout(() => {
-      // If animation is still running after expected duration + buffer
-      const expectedDuration = visemeData[visemeData.length - 1]?.audioOffset + 1000 || 10000;
-      
-      if (animationRef.current) {
-        console.log('Backup timeout triggered to end animation');
-        cancelAnimationFrame(animationRef.current);
-        animationRef.current = null;
+      // Set up audio
+      if (audioRef.current) {
+        console.log("VisemeFace: Setting up audio for playback, URL:", audioUrl);
         
-        // Reset to neutral viseme
-        setCurrentViseme(0);
-        
-        // Signal that playback is complete
-        if (onPlayComplete) {
-          onPlayComplete();
+        // Stop previous audio if any
+        if (!audioRef.current.paused) {
+          audioRef.current.pause();
         }
-      }
-    }, (visemeData[visemeData.length - 1]?.audioOffset + 5000) || 15000);
-    
-    // Cleanup function
-    return () => {
-      // Clean up animation
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current);
-        animationRef.current = null;
-      }
-      
-      // Clean up timeout
-      clearTimeout(timeoutId);
-      
-      // Clean up audio
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current.oncanplay = null;
-        audioRef.current.onended = null;
-        audioRef.current.ontimeupdate = null;
-        audioRef.current.onerror = null;
-      }
-    };
-  }, [audioUrl, isPlaying, visemeData, onPlayComplete]);
-
-  // Cleanup on component unmount
-  useEffect(() => {
-    return () => {
-      // Clean up any animation frame
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current);
-        animationRef.current = null;
-      }
-      
-      // Stop and clean up audio
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current.oncanplay = null;
-        audioRef.current.onended = null;
-        audioRef.current.ontimeupdate = null;
-        audioRef.current.onerror = null;
         
-        // Revoke any blob URL
-        if (audioRef.current.src && audioRef.current.src.startsWith('blob:')) {
-          const oldSrc = audioRef.current.src;
-          audioRef.current.src = '';
-          try {
-            URL.revokeObjectURL(oldSrc);
-          } catch (e) {
-            console.warn('Error revoking URL on unmount:', e);
+        // Clear previous audio source
+        audioRef.current.removeAttribute('src');
+        
+        // Set new source
+        audioRef.current.src = audioUrl;
+        console.log("VisemeFace: Audio source set:", audioRef.current.src);
+        
+        // Ensure we preload the audio
+        audioRef.current.preload = "auto";
+        
+        // Avoid multiple oncanplay handlers
+        audioRef.current.oncanplay = null;
+        audioRef.current.onplay = null;
+        audioRef.current.onended = null;
+        audioRef.current.onerror = null;
+        audioRef.current.ontimeupdate = null;
+        
+        // Set up event handlers
+        audioRef.current.oncanplay = () => {
+          console.log("VisemeFace: Audio ready to play, duration:", audioRef.current.duration);
+          
+          // Log the duration to help debugging
+          console.log(`Audio duration: ${audioRef.current.duration}s, Visemes: ${processedVisemes.length}`);
+          
+          // Use normal playback rate for better audio quality
+          audioRef.current.playbackRate = 1.0;
+          
+          audioRef.current.play()
+            .then(() => {
+              console.log("VisemeFace: Audio playback started successfully");
+              setDebugInfo('Starting animation with audio');
+              if (animationRef.current) {
+                cancelAnimationFrame(animationRef.current);
+              }
+              animationRef.current = requestAnimationFrame(runAnimation);
+            })
+            .catch(error => {
+              console.error("VisemeFace: Audio play error:", error);
+              setDebugInfo(`Audio error: ${error.message}`);
+              
+              // Don't fall back to demo mode if audio fails - this prevents the issue
+              if (onPlayComplete) onPlayComplete();
+            });
+        };
+        
+        // Monitor time updates to help with debugging
+        audioRef.current.ontimeupdate = () => {
+          // Only log occasionally to avoid console spam
+          if (Math.round(audioRef.current.currentTime * 10) % 20 === 0) { // Log every ~2 seconds
+            console.log(`VisemeFace: Audio playing: ${audioRef.current.currentTime.toFixed(2)}s / ${audioRef.current.duration.toFixed(2)}s`);
           }
-        }
+        };
+        
+        audioRef.current.onended = () => {
+          console.log("VisemeFace: Audio playback ended");
+          if (animationRef.current) {
+            cancelAnimationFrame(animationRef.current);
+          }
+          setCurrentViseme(0);
+          setDebugInfo('Animation complete');
+          if (onPlayComplete) onPlayComplete();
+        };
+        
+        // Also add a timeout-based backup to ensure animation completes
+        const backupTimeout = setTimeout(() => {
+          const audio = audioRef.current;
+          if (audio && !audio.paused && audio.currentTime > 0 && audio.currentTime >= audio.duration - 0.2) {
+            console.log("VisemeFace: Backup timeout: ensuring animation completes");
+            if (animationRef.current) {
+              cancelAnimationFrame(animationRef.current);
+            }
+            setCurrentViseme(0);
+            setDebugInfo('Animation complete (timeout)');
+            if (onPlayComplete) onPlayComplete();
+          }
+        }, (audioRef.current.duration || 10) * 1000 + 500); // Duration + 500ms buffer
+        
+        audioRef.current.onerror = (e) => {
+          console.error("VisemeFace: Audio error event:", e);
+          setDebugInfo(`Audio error: ${e}`);
+          
+          // Don't fall back to demo mode if audio fails
+          if (onPlayComplete) onPlayComplete();
+        };
+        
+        // Return cleanup function
+        return () => {
+          clearTimeout(backupTimeout);
+          if (animationRef.current) {
+            cancelAnimationFrame(animationRef.current);
+          }
+        };
+      } else {
+        // No audio element, but don't switch to demo mode
+        if (onPlayComplete) onPlayComplete();
+      }
+    } else if (isPlaying && !audioUrl) {
+      // No audio URL but want to play
+      // Don't switch to demo mode to avoid unwanted animation
+      if (onPlayComplete) onPlayComplete();
+    } else if (!isPlaying) {
+      // Not playing, cleanup
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current);
+      }
+      if (audioRef.current) {
+        audioRef.current.pause();
+      }
+    }
+    
+    // Main cleanup function on component unmount or dependencies change
+    return () => {
+      // Cleanup
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current);
+      }
+      if (audioRef.current) {
+        audioRef.current.pause();
+        // Clean event handlers on unmount
+        audioRef.current.oncanplay = null;
+        audioRef.current.onplay = null;
+        audioRef.current.onended = null;
+        audioRef.current.onerror = null;
+        audioRef.current.ontimeupdate = null;
       }
     };
-  }, []);
+  }, [isPlaying, audioUrl, processedVisemes]);
   
   // Buttons to manually cycle through visemes (for debugging)
   const nextManualViseme = () => {
@@ -740,6 +674,21 @@ const VisemeFace = ({ visemeData, audioUrl, isPlaying, onPlayComplete }) => {
   // Enhance facial expression based on viseme
   const eyesWidth = currentViseme >= 2 && currentViseme <= 5 ? 6 : 5;
   const eyesHeight = currentViseme >= 9 && currentViseme <= 11 ? 8 : 7;
+
+  // Cleanup function
+  useEffect(() => {
+    return () => {
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current);
+      }
+      if (transitionTimerRef.current) {
+        cancelAnimationFrame(transitionTimerRef.current);
+      }
+      if (audioRef.current) {
+        audioRef.current.pause();
+      }
+    };
+  }, []);
 
   // Render the face with inline CSS to ensure the avatar displays properly
   return (
