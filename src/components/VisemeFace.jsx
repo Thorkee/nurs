@@ -386,7 +386,7 @@ const VisemeFace = ({ visemeData, audioUrl, isPlaying, onPlayComplete }) => {
     // This improves synchronization for pauses
     const adjustedTimeMs = isPunctuationPause 
       ? currentTimeMs - 120  // Longer offset during pauses
-      : currentTimeMs - 60;  // Regular offset for normal speech
+      : currentTimeMs - 40;  // Reduced offset for better sync (was 60)
     
     // Find the appropriate viseme for this time
     let visemeFound = false;
@@ -422,11 +422,47 @@ const VisemeFace = ({ visemeData, audioUrl, isPlaying, onPlayComplete }) => {
     }
     
     if (visemeFound) {
+      // Get current viseme ID
       const visemeId = processedVisemes[lastValidIndex].visemeId;
       
-      // If we're at a punctuation pause, ensure we use the rest position (viseme 0)
-      // for a more natural look during pauses
-      const effectiveVisemeId = isPunctuationPause ? 0 : visemeId;
+      // Determine whether we should use the viseme or force a different one
+      let effectiveVisemeId = visemeId;
+      
+      // If we're not at a punctuation pause but we detected viseme 0 and we were not previously at 0,
+      // AND we're not at the end of the audio, we might be stuck
+      const isStuckOnNeutral = visemeId === 0 && currentViseme !== 0 && !isPunctuationPause && remainingTimeMs > 500;
+      
+      // If we seem to be stuck on viseme 0 (neutral), try to use a nearby non-zero viseme
+      if (isStuckOnNeutral) {
+        // Look ahead for a non-zero viseme
+        for (let i = lastValidIndex + 1; i < Math.min(lastValidIndex + 5, processedVisemes.length); i++) {
+          if (processedVisemes[i].visemeId !== 0) {
+            effectiveVisemeId = processedVisemes[i].visemeId;
+            console.log(`Detected possible stuck viseme, using future viseme ${effectiveVisemeId} instead of 0`);
+            break;
+          }
+        }
+        
+        // If we couldn't find a non-zero viseme ahead, use the last non-zero viseme
+        if (effectiveVisemeId === 0) {
+          for (let i = lastValidIndex - 1; i >= Math.max(0, lastValidIndex - 5); i--) {
+            if (processedVisemes[i].visemeId !== 0) {
+              effectiveVisemeId = processedVisemes[i].visemeId;
+              console.log(`Using previous viseme ${effectiveVisemeId} instead of 0`);
+              break;
+            }
+          }
+        }
+        
+        // If we still have viseme 0, pick a reasonable default
+        if (effectiveVisemeId === 0) {
+          effectiveVisemeId = 2; // Default to an "ah" sound if all else fails
+          console.log(`Falling back to default viseme ${effectiveVisemeId}`);
+        }
+      } else if (isPunctuationPause) {
+        // If we're at a punctuation pause, ensure we use viseme 0
+        effectiveVisemeId = 0;
+      }
       
       // Always update the viseme to ensure continuous animation
       setVisemeWithTransition(effectiveVisemeId);

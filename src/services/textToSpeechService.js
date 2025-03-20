@@ -527,16 +527,55 @@ async function processChunksWithViseme(text, speechKey, speechRegion, voiceName)
  */
 function generateManualVisemes(textLength, startOffset = 0) {
   const visemeData = [];
-  const avgDuration = 70; // Average duration for each viseme in ms
+  const avgDuration = 50; // Average duration for each viseme in ms (decreased from 70 to 50 for more frequent updates)
   
-  // Estimate number of visemes based on text length
-  const numVisemes = Math.max(20, Math.ceil(textLength * 0.8));
+  // Estimate number of visemes based on text length - increase for more continuous animation
+  const numVisemes = Math.max(30, Math.ceil(textLength * 1.5)); // Increased multiplier from 0.8 to 1.5
+  
+  // Add initial neutral viseme
+  visemeData.push({
+    visemeId: 0,
+    audioOffset: startOffset
+  });
   
   // Generate visemes with appropriate timing
-  for (let i = 0; i < numVisemes; i++) {
-    // Use a mix of common visemes for natural mouth movement
-    // Common visemes: 0 (neutral), 2 (ah), 3 (aa), 5 (ee), 10 (w), etc.
-    const visemeId = Math.floor(Math.random() * 12); // 0-11 viseme IDs
+  for (let i = 1; i < numVisemes; i++) {
+    // Use a pattern of visemes rather than completely random ones
+    // This creates more natural sequences of mouth movements
+    let visemeId;
+    
+    // Create realistic viseme sequences that mimic natural speech patterns
+    // Avoid staying on viseme 0 (neutral/closed) for too long
+    const prevVisemeId = visemeData[i-1]?.visemeId;
+    
+    if (prevVisemeId === 0) {
+      // If previous was neutral/closed, open mouth with higher probability
+      visemeId = Math.floor(Math.random() * 5) + 1; // 1-5 (open mouth visemes)
+    } else if (i % 8 === 0) {
+      // Occasionally return to neutral position (viseme 0) to simulate pauses
+      visemeId = 0;
+    } else if (i % 3 === 0) {
+      // Every third viseme, use one of the more common mouth shapes
+      visemeId = [1, 2, 3, 4, 6][Math.floor(Math.random() * 5)];
+    } else {
+      // Otherwise use a weighted distribution of visemes
+      // More common visemes get higher probability
+      const commonVisemes = [1, 2, 3, 4, 6, 8, 10]; // Most common mouth positions
+      const lessCommonVisemes = [5, 7, 9, 11, 12, 13, 14]; // Less common
+      const rareVisemes = [15, 16, 17, 18, 19, 20, 21]; // Rarely used
+      
+      const random = Math.random();
+      if (random < 0.7) {
+        // 70% chance of common viseme
+        visemeId = commonVisemes[Math.floor(Math.random() * commonVisemes.length)];
+      } else if (random < 0.9) {
+        // 20% chance of less common viseme
+        visemeId = lessCommonVisemes[Math.floor(Math.random() * lessCommonVisemes.length)];
+      } else {
+        // 10% chance of rare viseme
+        visemeId = rareVisemes[Math.floor(Math.random() * rareVisemes.length)];
+      }
+    }
     
     // Create animation timing with realistic gaps
     const audioOffset = startOffset + (i * avgDuration);
@@ -546,6 +585,12 @@ function generateManualVisemes(textLength, startOffset = 0) {
       audioOffset
     });
   }
+  
+  // Ensure we end with neutral viseme 0
+  visemeData.push({
+    visemeId: 0, 
+    audioOffset: startOffset + (numVisemes * avgDuration)
+  });
   
   return visemeData;
 } 
