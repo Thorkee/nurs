@@ -1,9 +1,14 @@
 import axios from 'axios';
-import * as SpeechSDK from 'microsoft-cognitiveservices-speech-sdk';
+import { SpeechSDK } from 'microsoft-cognitiveservices-speech-sdk';
 
-// Cache for storing recently generated speech audio
-const audioCache = new Map();
+// Create a cache for recently generated speech audio
+// Using Map to preserve insertion order for LRU-like behavior
 const MAX_CACHE_SIZE = 25;
+const MAX_VISEME_CACHE_SIZE = 15;
+
+// Create caches for audio with and without viseme data
+const speechCache = new Map();
+const visemeCache = new Map();
 
 /**
  * Converts text to speech using Azure Speech Studio API (REST API version)
@@ -12,157 +17,96 @@ const MAX_CACHE_SIZE = 25;
  */
 export const textToSpeech = async (text) => {
   try {
-    // Check cache first
-    const cacheKey = `speech-${text.slice(0, 100)}`;
-    const cachedAudio = audioCache.get(cacheKey);
+    // Default Chinese voice - female
+    const voice = 'zh-CN-XiaoxiaoNeural';
     
-    if (cachedAudio && Date.now() - cachedAudio.timestamp < 30 * 60 * 1000) { // 30 min expiry
-      console.log('Using cached audio for text');
-      return cachedAudio.url;
+    // Generate cache key based on text
+    const cacheKey = `tts_${text}`;
+    
+    // Check if we have a cached version
+    if (speechCache.has(cacheKey)) {
+      console.log('Using cached TTS audio for:', text.substring(0, 30) + '...');
+      
+      // Get cached blob
+      const cachedBlob = speechCache.get(cacheKey);
+      
+      // Always create a new URL for the cached blob to prevent playback issues
+      // This is important as the previous URL might have been revoked
+      const newUrl = URL.createObjectURL(cachedBlob);
+      console.log('Created new URL for cached audio:', newUrl);
+      
+      return newUrl;
     }
     
-    // Get API credentials from environment variables
+    // Not in cache, synthesize new speech
+    console.log('Generating new TTS audio for:', text.substring(0, 30) + '...');
+    
+    // Retrieve API credentials from environment variables
     const speechKey = import.meta.env.VITE_AZURE_SPEECH_KEY;
     const speechRegion = import.meta.env.VITE_AZURE_SPEECH_REGION;
-    const voiceName = import.meta.env.VITE_AZURE_SPEECH_VOICE_NAME || 'zh-HK-WanLungNeural';
-
-    // Escape special XML characters to prevent SSML parsing errors
-    const escapedText = text
+    
+    // Validate API credentials
+    if (!speechKey || !speechRegion) {
+      throw new Error('Azure Speech credentials missing. Check your .env file.');
+    }
+    
+    // Escape special characters in SSML
+    const ssmlText = text
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')
       .replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;')
       .replace(/'/g, '&apos;');
-
-    console.log('Azure Speech Key length:', speechKey ? speechKey.length : 0);
-    console.log('Azure Speech Region:', speechRegion);
-    console.log('Voice Name:', voiceName);
-    console.log('Text length:', text.length, 'characters');
-
-    // Check for common issues
-    if (!speechKey) {
-      throw new Error('Missing Speech API Key');
+    
+    // Create SSML document for speech synthesis
+    const ssml = `
+      <speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xml:lang="zh-CN">
+        <voice name="${voice}">
+          <prosody rate="0.95" pitch="+0Hz">
+            ${ssmlText}
+          </prosody>
+        </voice>
+      </speak>
+    `;
+    
+    // Send request to Azure Speech synthesis endpoint
+    const url = `https://${speechRegion}.tts.speech.microsoft.com/cognitiveservices/v1`;
+    const response = await axios.post(url, ssml, {
+      headers: {
+        'Ocp-Apim-Subscription-Key': speechKey,
+        'Content-Type': 'application/ssml+xml',
+        'X-Microsoft-OutputFormat': 'audio-24khz-96kbitrate-mono-mp3',
+        'User-Agent': 'colonoscopy-patient-simulator'
+      },
+      responseType: 'arraybuffer'
+    });
+    
+    // Verify response is valid
+    if (!response.data) {
+      throw new Error('No data received from speech service');
     }
     
-    if (speechKey.length < 30) {
-      console.warn('Speech API Key appears too short. Azure keys are typically 32 characters');
+    // Convert response to blob
+    const audioBlob = new Blob([response.data], { type: 'audio/mp3' });
+    
+    // Cache the audio blob for future use
+    speechCache.set(cacheKey, audioBlob);
+    
+    // Trim cache if it exceeds maximum size
+    if (speechCache.size > MAX_CACHE_SIZE) {
+      const oldestKey = speechCache.keys().next().value;
+      speechCache.delete(oldestKey);
+      console.log('Removing oldest TTS cache entry to maintain size limit');
     }
     
-    if (!speechRegion) {
-      throw new Error('Missing Speech Region');
-    }
+    // Create URL for the audio blob
+    const audioUrl = URL.createObjectURL(audioBlob);
+    console.log('Created new URL for fresh audio:', audioUrl);
     
-    if (!['eastus', 'eastus2', 'westus', 'westus2', 'southcentralus', 'northeurope', 'westeurope', 'southeastasia', 'eastasia', 'japaneast', 'japanwest', 'australiaeast', 'centralindia', 'canadacentral', 'uksouth', 'francecentral', 'switzerlandnorth', 'germanywestcentral'].includes(speechRegion)) {
-      console.warn(`Speech region "${speechRegion}" might not be valid. Azure regions are typically in format like "eastus2"`);
-    }
-    
-    // For very long text, process in chunks
-    if (text.length > 300) {
-      return processLongTextInChunks(text, speechKey, speechRegion, voiceName);
-    }
-
-    // Prepare SSML with enhanced error checking
-    console.log('Preparing SSML for Azure Speech Service');
-    
-    // Keep SSML simple and compact
-    const ssml = `<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xml:lang="zh-HK"><voice name="${voiceName}">${escapedText}</voice></speak>`;
-
-    console.log('SSML length:', ssml.length, 'characters');
-
-    // Make direct request to speech synthesis endpoint with API key
-    try {
-      console.log(`Sending request to ${speechRegion}.tts.speech.microsoft.com...`);
-      
-      const response = await axios({
-        method: 'post',
-        url: `https://${speechRegion}.tts.speech.microsoft.com/cognitiveservices/v1`,
-        headers: {
-          'Ocp-Apim-Subscription-Key': speechKey,
-          'Content-Type': 'application/ssml+xml',
-          'X-Microsoft-OutputFormat': 'audio-16khz-128kbitrate-mono-mp3',
-          'User-Agent': 'patient-simulation-hk'
-        },
-        data: ssml,
-        responseType: 'arraybuffer',
-        timeout: 10000 // 10 second timeout
-      });
-
-      // Check if we got a valid audio response
-      if (response.data.byteLength < 100) {
-        console.warn('Received very small audio data:', response.data.byteLength, 'bytes');
-      } else {
-        console.log('Successfully received', response.data.byteLength, 'bytes of audio data');
-      }
-
-      // Convert the audio data to a blob and create a URL
-      const audioBlob = new Blob([response.data], { type: 'audio/mp3' });
-      const audioUrl = URL.createObjectURL(audioBlob);
-      
-      // Add to cache
-      if (audioCache.size >= MAX_CACHE_SIZE) {
-        // Remove oldest entry if cache is full
-        const oldestKey = audioCache.keys().next().value;
-        URL.revokeObjectURL(audioCache.get(oldestKey).url); // Clean up URL
-        audioCache.delete(oldestKey);
-      }
-      
-      audioCache.set(cacheKey, {
-        url: audioUrl,
-        timestamp: Date.now()
-      });
-      
-      return audioUrl;
-    } catch (apiError) {
-      console.error('Error calling Azure Speech Service:', apiError);
-      
-      // Enhanced error handling
-      if (apiError.code === 'ECONNABORTED') {
-        throw new Error('Connection timed out. The Azure Speech Service did not respond in time.');
-      }
-      
-      if (apiError.code === 'ENOTFOUND') {
-        throw new Error(`Could not connect to ${speechRegion}.tts.speech.microsoft.com. Check your region or internet connection.`);
-      }
-      
-      if (apiError.response) {
-        console.error('Response status:', apiError.response.status);
-        
-        let errorMessage = `HTTP Error ${apiError.response.status}`;
-        
-        // Status code specific guidance
-        if (apiError.response.status === 400) {
-          errorMessage += ': Bad Request. Check SSML syntax or voice name.';
-        } else if (apiError.response.status === 401) {
-          errorMessage += ': Unauthorized. Check your API key.';
-        } else if (apiError.response.status === 403) {
-          errorMessage += ': Forbidden. Your API key might not have access to this service or region.';
-        } else if (apiError.response.status === 404) {
-          errorMessage += ': Not Found. Check your region and voice name.';
-        } else if (apiError.response.status === 429) {
-          errorMessage += ': Too Many Requests. You may have exceeded your quota.';
-        }
-        
-        // Try to extract detailed error information
-        if (apiError.response.data) {
-          try {
-            const errorText = new TextDecoder().decode(apiError.response.data);
-            console.error('Response error:', errorText);
-            if (errorText && errorText.length > 0) {
-              errorMessage += ' - ' + errorText;
-            }
-          } catch (e) {
-            console.error('Failed to decode error response');
-          }
-        }
-        
-        throw new Error(errorMessage);
-      }
-      
-      throw new Error(`Failed to generate speech: ${apiError.message}`);
-    }
+    return audioUrl;
   } catch (error) {
-    console.error('Error converting text to speech:', error);
-    throw new Error(`Failed to convert text to speech: ${error.message}`);
+    console.error('Text-to-speech service error:', error);
+    throw new Error(`Text-to-speech failed: ${error.message}`);
   }
 };
 
@@ -256,13 +200,13 @@ async function processLongTextInChunks(text, speechKey, speechRegion, voiceName)
     
     // Cache the combined result
     const cacheKey = `speech-${text.slice(0, 100)}`;
-    if (audioCache.size >= MAX_CACHE_SIZE) {
-      const oldestKey = audioCache.keys().next().value;
-      URL.revokeObjectURL(audioCache.get(oldestKey).url);
-      audioCache.delete(oldestKey);
+    if (speechCache.size >= MAX_CACHE_SIZE) {
+      const oldestKey = speechCache.keys().next().value;
+      URL.revokeObjectURL(speechCache.get(oldestKey).url);
+      speechCache.delete(oldestKey);
     }
     
-    audioCache.set(cacheKey, {
+    speechCache.set(cacheKey, {
       url: audioUrl,
       timestamp: Date.now()
     });
@@ -304,213 +248,162 @@ function splitIntoSentences(text) {
  */
 export const textToSpeechWithViseme = async (text) => {
   try {
-    // Check cache first for exact matches
-    const cacheKey = `viseme-${text.slice(0, 100)}`;
-    const cachedResult = audioCache.get(cacheKey);
+    // Generate cache key based on text
+    const cacheKey = `tts_viseme_${text}`;
     
-    if (cachedResult && 
-        cachedResult.visemeData && 
-        Date.now() - cachedResult.timestamp < 30 * 60 * 1000) { // 30 min expiry
-      console.log('Using cached audio and viseme data');
+    // Check if we have a cached version
+    if (visemeCache.has(cacheKey)) {
+      console.log('Using cached viseme data for:', text.substring(0, 30) + '...');
+      const cachedData = visemeCache.get(cacheKey);
+      
+      // Always create a new URL for the cached blob to prevent playback issues
+      // This is important as the previous URL might have been revoked
+      const newUrl = URL.createObjectURL(cachedData.audioBlob);
+      console.log('Created new URL for cached viseme audio:', newUrl);
+      
       return {
-        audioUrl: cachedResult.url,
-        visemeData: cachedResult.visemeData
+        audioUrl: newUrl,
+        visemeData: cachedData.visemeData
       };
     }
     
-    // Get API credentials from environment variables
+    // Default Chinese voice - female
+    const voice = 'zh-CN-XiaoxiaoNeural';
+    
+    // Retrieve API credentials from environment variables
     const speechKey = import.meta.env.VITE_AZURE_SPEECH_KEY;
     const speechRegion = import.meta.env.VITE_AZURE_SPEECH_REGION;
-    const voiceName = import.meta.env.VITE_AZURE_SPEECH_VOICE_NAME || 'zh-HK-WanLungNeural';
-
+    
+    // Validate API credentials
     if (!speechKey || !speechRegion) {
-      throw new Error('Missing Speech API credentials');
+      throw new Error('Azure Speech credentials missing. Check your .env file.');
     }
-
-    console.log("Creating speech synthesizer with key and region:", speechRegion);
-
-    // For long text, process in smaller chunks but with viseme data
-    if (text.length > 200) {
-      return processChunksWithViseme(text, speechKey, speechRegion, voiceName);
-    }
-
-    // Escape special XML characters
-    const escapedText = text
+    
+    // Escape special characters in SSML
+    const ssmlText = text
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')
       .replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;')
       .replace(/'/g, '&apos;');
     
-    // Use only one approach to generate audio to prevent duplicate sounds
-    console.log("Using REST API for audio synthesis...");
-    const response = await axios({
-      method: 'post',
-      url: `https://${speechRegion}.tts.speech.microsoft.com/cognitiveservices/v1`,
-      headers: {
-        'Ocp-Apim-Subscription-Key': speechKey,
-        'Content-Type': 'application/ssml+xml',
-        'X-Microsoft-OutputFormat': 'audio-16khz-128kbitrate-mono-mp3',
-        'User-Agent': 'patient-simulation-hk'
-      },
-      data: `<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xml:lang="zh-HK">
-        <voice name="${voiceName}">${escapedText}</voice>
-      </speak>`,
-      responseType: 'arraybuffer',
-      timeout: 10000 // 10 second timeout
-    });
+    // Create SSML document for speech synthesis with viseme
+    const ssml = `
+      <speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xml:lang="zh-CN">
+        <voice name="${voice}">
+          <prosody rate="0.95" pitch="+0Hz">
+            ${ssmlText}
+          </prosody>
+        </voice>
+      </speak>
+    `;
     
-    // Create audio blob from response
-    const audioBlob = new Blob([response.data], { type: 'audio/mp3' });
-    const audioUrl = URL.createObjectURL(audioBlob);
+    // Create speech configuration with viseme feature enabled
+    const speechConfig = SpeechSDK.SpeechConfig.fromSubscription(speechKey, speechRegion);
+    speechConfig.speechSynthesisOutputFormat = SpeechSDK.SpeechSynthesisOutputFormat.Audio24Khz96KBitRateMonoMp3;
+    speechConfig.setProperty(SpeechSDK.PropertyId.SpeechServiceResponse_RequestSentenceBoundary, "true");
     
-    console.log("Successfully generated audio using REST API");
+    // Create speech synthesizer with viseme feature enabled
+    const synthesizer = new SpeechSDK.SpeechSynthesizer(speechConfig);
     
-    // Generate visemes for animation
-    const visemeData = generateManualVisemes(text.length);
-    console.log(`Generated ${visemeData.length} manual visemes for animation`);
+    // Array to collect viseme data
+    const visemeData = [];
     
-    // Cache the result with viseme data
-    if (audioCache.size >= MAX_CACHE_SIZE) {
-      const oldestKey = audioCache.keys().next().value;
-      if (audioCache.get(oldestKey).url) {
-        URL.revokeObjectURL(audioCache.get(oldestKey).url);
-      }
-      audioCache.delete(oldestKey);
-    }
-    
-    audioCache.set(cacheKey, {
-      url: audioUrl,
-      visemeData: visemeData,
-      timestamp: Date.now()
-    });
-    
-    return {
-      audioUrl,
-      visemeData
+    // Listen for viseme events
+    synthesizer.visemeReceived = (s, e) => {
+      // Map Azure viseme ID to our simplified viseme set
+      // Azure uses Microsoft's 21 viseme model, we're using a simplified set
+      const mappedVisemeId = mapAzureVisemeToOurModel(e.visemeId);
+      
+      // Add viseme data with timing information
+      visemeData.push({
+        visemeId: mappedVisemeId,
+        audioOffset: e.audioOffset / 10000  // Convert to milliseconds
+      });
     };
+    
+    // Synthesize speech with viseme
+    console.log('Generating new TTS with viseme for:', text.substring(0, 30) + '...');
+    
+    return new Promise((resolve, reject) => {
+      synthesizer.speakSsmlAsync(
+        ssml,
+        result => {
+          // Check if synthesis was successful
+          if (result.reason === SpeechSDK.ResultReason.SynthesizingAudioCompleted) {
+            // Get audio data as array buffer
+            const audioData = result.audioData;
+            
+            // Convert array buffer to blob
+            const audioBlob = new Blob([audioData], { type: 'audio/mp3' });
+            
+            // Create URL for the audio blob
+            const audioUrl = URL.createObjectURL(audioBlob);
+            console.log('Created new URL for fresh viseme audio:', audioUrl);
+            
+            // Sort viseme data by audioOffset
+            visemeData.sort((a, b) => a.audioOffset - b.audioOffset);
+            
+            // Deduplicate consecutive identical visemes
+            const processedVisemeData = [];
+            let prevViseme = -1;
+            
+            for (const viseme of visemeData) {
+              if (viseme.visemeId !== prevViseme) {
+                processedVisemeData.push(viseme);
+                prevViseme = viseme.visemeId;
+              }
+            }
+            
+            // Add ending viseme if needed
+            if (processedVisemeData.length > 0) {
+              const lastViseme = processedVisemeData[processedVisemeData.length - 1];
+              // Add neutral viseme at the end with a small offset to ensure clean ending
+              processedVisemeData.push({
+                visemeId: 0,  // Neutral viseme
+                audioOffset: lastViseme.audioOffset + 200  // 200ms after last viseme
+              });
+            }
+            
+            // Store in cache
+            visemeCache.set(cacheKey, {
+              audioBlob,
+              visemeData: processedVisemeData
+            });
+            
+            // Trim cache if necessary
+            if (visemeCache.size > MAX_VISEME_CACHE_SIZE) {
+              const oldestKey = visemeCache.keys().next().value;
+              visemeCache.delete(oldestKey);
+              console.log('Removing oldest viseme cache entry to maintain size limit');
+            }
+            
+            // Resolve with audio URL and viseme data
+            resolve({
+              audioUrl,
+              visemeData: processedVisemeData
+            });
+          } else {
+            // Handle errors
+            console.error('Speech synthesis failed:', result.errorDetails);
+            reject(new Error(`Speech synthesis failed: ${result.errorDetails}`));
+          }
+          
+          // Clean up synthesizer
+          synthesizer.close();
+        },
+        error => {
+          console.error('Error synthesizing speech:', error);
+          synthesizer.close();
+          reject(error);
+        }
+      );
+    });
   } catch (error) {
-    console.error("Error in text-to-speech with viseme:", error);
-    throw error;
+    console.error('Text-to-speech with viseme error:', error);
+    throw new Error(`Text-to-speech with viseme failed: ${error.message}`);
   }
 };
-
-/**
- * Process text in chunks with viseme data
- * @param {string} text - Full text to process
- * @param {string} speechKey - API key
- * @param {string} speechRegion - API region
- * @param {string} voiceName - Voice name
- * @returns {Promise<{audioUrl: string, visemeData: Array}>} - Audio URL and viseme data
- */
-async function processChunksWithViseme(text, speechKey, speechRegion, voiceName) {
-  // Split text into sentences
-  const sentences = splitIntoSentences(text);
-  
-  // Create chunks of 2-3 sentences
-  const chunks = [];
-  let currentChunk = [];
-  let currentChunkLength = 0;
-  
-  for (const sentence of sentences) {
-    if (currentChunkLength + sentence.length > 150 || currentChunk.length >= 2) {
-      if (currentChunk.length > 0) {
-        chunks.push(currentChunk.join(''));
-        currentChunk = [];
-        currentChunkLength = 0;
-      }
-    }
-    
-    currentChunk.push(sentence);
-    currentChunkLength += sentence.length;
-  }
-  
-  // Add any remaining sentences
-  if (currentChunk.length > 0) {
-    chunks.push(currentChunk.join(''));
-  }
-  
-  console.log(`Processing ${chunks.length} chunks with viseme data`);
-  
-  // Process each chunk
-  const results = await Promise.all(chunks.map(async (chunk, index) => {
-    try {
-      // Escape special XML characters
-      const escapedChunk = chunk
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&apos;');
-      
-      // Generate audio for this chunk
-      const response = await axios({
-        method: 'post',
-        url: `https://${speechRegion}.tts.speech.microsoft.com/cognitiveservices/v1`,
-        headers: {
-          'Ocp-Apim-Subscription-Key': speechKey,
-          'Content-Type': 'application/ssml+xml',
-          'X-Microsoft-OutputFormat': 'audio-16khz-128kbitrate-mono-mp3',
-          'User-Agent': 'patient-simulation-hk'
-        },
-        data: `<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xml:lang="zh-HK">
-          <voice name="${voiceName}">${escapedChunk}</voice>
-        </speak>`,
-        responseType: 'arraybuffer',
-        timeout: 8000
-      });
-      
-      // Generate viseme data for this chunk
-      // Calculate offset based on previous chunks
-      const startOffset = index * 5000; // Assume 5 seconds per chunk
-      const chunkVisemes = generateManualVisemes(chunk.length, startOffset);
-      
-      return {
-        audioBlob: new Blob([response.data], { type: 'audio/mp3' }),
-        visemeData: chunkVisemes
-      };
-    } catch (error) {
-      console.error(`Error processing chunk ${index}:`, error);
-      return {
-        audioBlob: null,
-        visemeData: []
-      };
-    }
-  }));
-  
-  // Combine audio blobs
-  const audioBlobs = results.map(r => r.audioBlob).filter(Boolean);
-  if (audioBlobs.length === 0) {
-    throw new Error('Failed to generate any audio chunks');
-  }
-  
-  const combinedAudioBlob = new Blob(audioBlobs, { type: 'audio/mp3' });
-  const audioUrl = URL.createObjectURL(combinedAudioBlob);
-  
-  // Combine viseme data
-  const combinedVisemeData = results.flatMap(r => r.visemeData);
-  
-  // Cache the combined result
-  const cacheKey = `viseme-${text.slice(0, 100)}`;
-  if (audioCache.size >= MAX_CACHE_SIZE) {
-    const oldestKey = audioCache.keys().next().value;
-    if (audioCache.get(oldestKey).url) {
-      URL.revokeObjectURL(audioCache.get(oldestKey).url);
-    }
-    audioCache.delete(oldestKey);
-  }
-  
-  audioCache.set(cacheKey, {
-    url: audioUrl,
-    visemeData: combinedVisemeData,
-    timestamp: Date.now()
-  });
-  
-  return {
-    audioUrl,
-    visemeData: combinedVisemeData
-  };
-}
 
 /**
  * Generates manual viseme data for animation based on text length
@@ -541,4 +434,15 @@ function generateManualVisemes(textLength, startOffset = 0) {
   }
   
   return visemeData;
+}
+
+/**
+ * Maps Azure viseme ID to our simplified viseme set
+ * @param {number} azureVisemeId - Azure viseme ID
+ * @returns {number} - Simplified viseme ID
+ */
+function mapAzureVisemeToOurModel(azureVisemeId) {
+  // Implement the mapping logic based on your specific requirements
+  // This is a placeholder and should be replaced with the actual implementation
+  return azureVisemeId;
 } 
