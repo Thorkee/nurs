@@ -134,9 +134,24 @@ const PatientSimulator = ({ isActive, onStart, onStop, onConversationUpdate, onA
         // If we have a current audio URL, revoke it to free up memory
         if (currentAudioUrl) {
           // We need to be careful not to revoke cached URLs
-          const isCachedUrl = Array.from(audioCache?.values() || []).some(
-            cache => cache.url === currentAudioUrl
-          );
+          let isCachedUrl = false;
+          
+          // Safely check if URL is in cache
+          try {
+            if (audioCache.current && typeof audioCache.current.get === 'function') {
+              // Directly check if the URL exists in the cache Map
+              // Iterate through all entries in the Map
+              for (const cacheEntry of audioCache.current.entries()) {
+                // Check if this cache entry has a URL matching currentAudioUrl
+                if (cacheEntry[1] && cacheEntry[1].url === currentAudioUrl) {
+                  isCachedUrl = true;
+                  break;
+                }
+              }
+            }
+          } catch (e) {
+            console.warn('Error checking audio cache:', e);
+          }
           
           if (!isCachedUrl) {
             try {
