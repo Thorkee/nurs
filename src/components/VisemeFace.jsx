@@ -103,10 +103,31 @@ const VisemeFace = ({ visemeData, audioUrl, isPlaying, onPlayComplete }) => {
   const [manualViseme, setManualViseme] = useState(0);
   const [lastVisemeUpdateTime, setLastVisemeUpdateTime] = useState(0); // Track time of last update
   const [blinkState, setBlinkState] = useState(1); // 1 = fully open, 0 = closed
+  const [renderKey, setRenderKey] = useState(0);
   const audioRef = useRef(null);
   const animationRef = useRef(null);
   const transitionTimerRef = useRef(null);
   const blinkTimerRef = useRef(null);
+  const mouthPathRef = useRef(null);
+  const mouthFillRef = useRef(null);
+  
+  // Use refs to track latest state without triggering re-renders
+  const currentVisemeRef = useRef(currentViseme);
+  const targetVisemeRef = useRef(targetViseme);
+  const visemeTransitionRef = useRef(visemeTransition);
+  
+  // Update refs when state changes
+  useEffect(() => {
+    currentVisemeRef.current = currentViseme;
+  }, [currentViseme]);
+  
+  useEffect(() => {
+    targetVisemeRef.current = targetViseme;
+  }, [targetViseme]);
+  
+  useEffect(() => {
+    visemeTransitionRef.current = visemeTransition;
+  }, [visemeTransition]);
   
   // Add blinking effect
   useEffect(() => {
@@ -296,13 +317,22 @@ const VisemeFace = ({ visemeData, audioUrl, isPlaying, onPlayComplete }) => {
         const toX2 = parseFloat(toMatch[5]);
         const toY2 = parseFloat(toMatch[6]);
         
+        // Use non-linear easing for more dynamic motion
+        // Apply an exaggerated curve to make transitions more obvious
+        const easeProgress = visemeTransition < 0.5 
+          ? 2 * visemeTransition * visemeTransition 
+          : -1 + (4 - 2 * visemeTransition) * visemeTransition;
+          
+        // Make vertical movements more exaggerated
+        const verticalExaggeration = 1.2; // Increase vertical movement by 20%
+        
         // Interpolate between them based on transition progress
-        const x1 = fromX1 + (toX1 - fromX1) * visemeTransition;
-        const y1 = fromY1 + (toY1 - fromY1) * visemeTransition;
-        const cx = fromCX + (toCX - fromCX) * visemeTransition;
-        const cy = fromCY + (toCY - fromCY) * visemeTransition;
-        const x2 = fromX2 + (toX2 - fromX2) * visemeTransition;
-        const y2 = fromY2 + (toY2 - fromY2) * visemeTransition;
+        const x1 = fromX1 + (toX1 - fromX1) * easeProgress;
+        const y1 = fromY1 + (toY1 - fromY1) * easeProgress * verticalExaggeration;
+        const cx = fromCX + (toCX - fromCX) * easeProgress;
+        const cy = fromCY + (toCY - fromCY) * easeProgress * verticalExaggeration;
+        const x2 = fromX2 + (toX2 - fromX2) * easeProgress;
+        const y2 = fromY2 + (toY2 - fromY2) * easeProgress * verticalExaggeration;
         
         // Return the interpolated path
         const interpolatedPath = `M${x1.toFixed(2)},${y1.toFixed(2)} Q${cx.toFixed(2)},${cy.toFixed(2)} ${x2.toFixed(2)},${y2.toFixed(2)}`;
@@ -327,6 +357,12 @@ const VisemeFace = ({ visemeData, audioUrl, isPlaying, onPlayComplete }) => {
     return fromPath;
   };
   
+  // Force re-render on viseme changes
+  useEffect(() => {
+    setRenderKey(prevKey => prevKey + 1);
+    console.log(`Force re-rendering with viseme ${currentViseme}, key=${renderKey + 1}`);
+  }, [currentViseme, targetViseme, visemeTransition]);
+  
   // Smoother viseme setter with transitions
   const setVisemeWithTransition = (newVisemeId) => {
     const now = Date.now();
@@ -337,9 +373,18 @@ const VisemeFace = ({ visemeData, audioUrl, isPlaying, onPlayComplete }) => {
     
     if (newVisemeId !== targetViseme) {
       console.log(`Transitioning from viseme ${currentViseme} to ${newVisemeId}`);
-      setTargetViseme(newVisemeId);
-      setVisemeTransition(0); // Start transition from 0
-      setLastVisemeUpdateTime(now);
+      
+      // Batch these state updates together inside a function to ensure they happen properly
+      const updateVisemeStates = () => {
+        setTargetViseme(newVisemeId);
+        setVisemeTransition(0); // Start transition from 0
+        setLastVisemeUpdateTime(now);
+        // Force a re-render by incrementing the key
+        setRenderKey(prevKey => prevKey + 1);
+      };
+      
+      // Execute the state updates
+      updateVisemeStates();
       
       // Clear any existing transition timer
       if (transitionTimerRef.current) {
@@ -352,8 +397,8 @@ const VisemeFace = ({ visemeData, audioUrl, isPlaying, onPlayComplete }) => {
       // Adjust transition duration based on current pause context
       // This makes transitions slower at comma/period pauses
       const isPauseContext = isPauseViseme(newVisemeId, currentViseme);
-      // Longer transition for pauses, shorter for regular speech
-      const duration = isPauseContext ? 300 : 150;
+      // Shorter transition time for more responsive animation
+      const duration = isPauseContext ? 200 : 100; // Reduced from 300/150
       
       const animateTransition = () => {
         const elapsed = performance.now() - startTime;
@@ -362,15 +407,18 @@ const VisemeFace = ({ visemeData, audioUrl, isPlaying, onPlayComplete }) => {
         // Use ease-out timing function for more natural motion
         const easedProgress = 1 - Math.pow(1 - progress, 2);
         
+        // Force a re-render on each animation frame for smoother animation
         setVisemeTransition(easedProgress);
+        setRenderKey(prevKey => prevKey + 1);
         
         if (progress < 1) {
           transitionTimerRef.current = requestAnimationFrame(animateTransition);
         } else {
           // When transition completes, set current viseme to target
-          setCurrentViseme(newVisemeId);
+          setCurrentViseme(newVisemeId); 
           console.log(`Completed transition to viseme ${newVisemeId}`);
           setVisemeTransition(1);
+          setRenderKey(prevKey => prevKey + 1); // Force final re-render
           transitionTimerRef.current = null;
         }
       };
@@ -629,13 +677,23 @@ const VisemeFace = ({ visemeData, audioUrl, isPlaying, onPlayComplete }) => {
                 cancelAnimationFrame(animationRef.current);
               }
               
-              // Force a refresh of the viseme state before starting animation
-              setCurrentViseme(1); // Force a non-zero viseme to ensure animation starts
+              // Immediate animation start with exaggerated initial transitions
+              // Cycle through a few visemes quickly to ensure animation is visible
+              setCurrentViseme(2); // Start with a very open mouth
+              
+              // Use setTimeout to create a sequence of visually distinct visemes
               setTimeout(() => {
-                setCurrentViseme(0); // Then back to neutral
-                // Start the animation loop
-                animationRef.current = requestAnimationFrame(runAnimation);
-              }, 50);
+                setCurrentViseme(6); // Switch to smile
+                setRenderKey(prevKey => prevKey + 1);
+                
+                setTimeout(() => {
+                  setCurrentViseme(0); // Back to neutral
+                  setRenderKey(prevKey => prevKey + 1);
+                  
+                  // Start the animation loop
+                  animationRef.current = requestAnimationFrame(runAnimation);
+                }, 200);
+              }, 200);
             })
             .catch(error => {
               console.error("VisemeFace: Audio play error:", error);
@@ -766,6 +824,62 @@ const VisemeFace = ({ visemeData, audioUrl, isPlaying, onPlayComplete }) => {
     };
   }, []);
 
+  // Direct DOM update for mouth path as a fallback when state updates might not trigger re-renders
+  useEffect(() => {
+    // Update SVG path directly if the refs are available
+    if (mouthPathRef.current && mouthFillRef.current) {
+      const path = getInterpolatedMouthPath();
+      mouthPathRef.current.setAttribute('d', path);
+      mouthFillRef.current.setAttribute('d', path);
+    }
+  }, [currentViseme, targetViseme, visemeTransition]);
+
+  // Add a function to force animation cycle for debugging
+  const [forceAnimating, setForceAnimating] = useState(false);
+  
+  useEffect(() => {
+    // Run a forced animation cycle on initial load to verify animation is working
+    // This will be visible whenever the component mounts
+    let timeout;
+    const runForcedAnimationCycle = () => {
+      setForceAnimating(true);
+      setCurrentViseme(0);
+      setRenderKey(prev => prev + 1);
+      
+      // Cycle through several distinct visemes to demonstrate animation
+      const visemeSequence = [2, 6, 9, 11, 4, 0];
+      let index = 0;
+      
+      const animateCycle = () => {
+        if (index < visemeSequence.length) {
+          setCurrentViseme(visemeSequence[index]);
+          setRenderKey(prev => prev + 1);
+          
+          // Update the SVG path directly as well
+          if (mouthPathRef.current && mouthFillRef.current) {
+            const path = mouthPositions[visemeSequence[index]].path;
+            mouthPathRef.current.setAttribute('d', path);
+            mouthFillRef.current.setAttribute('d', path);
+          }
+          
+          index++;
+          timeout = setTimeout(animateCycle, 300);
+        } else {
+          setForceAnimating(false);
+        }
+      };
+      
+      timeout = setTimeout(animateCycle, 500);
+    };
+    
+    // Run forced animation cycle when component mounts
+    runForcedAnimationCycle();
+    
+    return () => {
+      clearTimeout(timeout);
+    };
+  }, []);
+
   // Render the face with inline CSS to ensure the avatar displays properly
   return (
     <div className="viseme-face">
@@ -801,6 +915,8 @@ const VisemeFace = ({ visemeData, audioUrl, isPlaying, onPlayComplete }) => {
         
         {/* Mouth with interpolated position - increased stroke width for more visibility */}
         <path 
+          ref={mouthPathRef}
+          key={`mouth-path-${renderKey}`}
           d={mouthPath} 
           fill="none" 
           stroke="#D5795E" 
@@ -810,6 +926,8 @@ const VisemeFace = ({ visemeData, audioUrl, isPlaying, onPlayComplete }) => {
         
         {/* Add an inner mouth fill to make movements more visible */}
         <path 
+          ref={mouthFillRef}
+          key={`mouth-fill-${renderKey}`}
           d={mouthPath}
           fill="rgba(160, 60, 60, 0.2)" 
           stroke="none"
@@ -846,6 +964,26 @@ const VisemeFace = ({ visemeData, audioUrl, isPlaying, onPlayComplete }) => {
           {debugInfo}
         </div>
       )}
+      
+      {/* Viseme debugging tools */}
+      <div style={{ 
+        position: 'absolute', 
+        top: '10px', 
+        right: '10px', 
+        fontSize: '10px', 
+        color: '#000',
+        background: 'rgba(255,255,255,0.7)',
+        padding: '5px',
+        borderRadius: '3px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '2px'
+      }}>
+        <div>Current Viseme: {currentViseme} ({mouthPositions[currentViseme]?.description})</div>
+        <div>Target Viseme: {targetViseme}</div>
+        <div>Transition: {visemeTransition.toFixed(2)}</div>
+        <div>Animation state: {forceAnimating ? "Forced animation" : isPlaying ? "Playing" : "Stopped"}</div>
+      </div>
     </div>
   );
 };

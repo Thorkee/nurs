@@ -527,10 +527,10 @@ async function processChunksWithViseme(text, speechKey, speechRegion, voiceName)
  */
 function generateManualVisemes(textLength, startOffset = 0) {
   const visemeData = [];
-  const avgDuration = 40; // Average duration for each viseme in ms (decreased from 50 to 40 for more frequent updates)
+  const avgDuration = 30; // Further decreased from 40 to 30ms for more frequent and noticeable updates
   
-  // Estimate number of visemes based on text length - increase for more continuous animation
-  const numVisemes = Math.max(40, Math.ceil(textLength * 2.0)); // Increased multiplier from 1.5 to 2.0
+  // Estimate number of visemes based on text length - increased for more animation points
+  const numVisemes = Math.max(50, Math.ceil(textLength * 2.5)); // Increased multiplier from 2.0 to 2.5
   
   console.log(`Generating ${numVisemes} visemes for text length ${textLength}`);
   
@@ -540,8 +540,15 @@ function generateManualVisemes(textLength, startOffset = 0) {
     audioOffset: startOffset
   });
   
+  // Add a dramatic first viseme for obvious opening
+  visemeData.push({
+    visemeId: 2, // Very open mouth
+    audioOffset: startOffset + avgDuration
+  });
+  
   // Generate visemes with appropriate timing
-  for (let i = 1; i < numVisemes; i++) {
+  // Start from 2 since we manually added the first two visemes
+  for (let i = 2; i < numVisemes; i++) {
     // Use a pattern of visemes rather than completely random ones
     // This creates more natural sequences of mouth movements
     let visemeId;
@@ -549,33 +556,49 @@ function generateManualVisemes(textLength, startOffset = 0) {
     // Create realistic viseme sequences that mimic natural speech patterns
     // Avoid staying on viseme 0 (neutral/closed) for too long
     const prevVisemeId = visemeData[i-1]?.visemeId;
+    const prevPrevVisemeId = visemeData[i-2]?.visemeId;
     
-    if (prevVisemeId === 0) {
-      // If previous was neutral/closed, open mouth with higher probability
-      visemeId = Math.floor(Math.random() * 5) + 1; // 1-5 (open mouth visemes)
-    } else if (i % 10 === 0) {
-      // Less frequently return to neutral position (viseme 0) to simulate pauses
-      // Changed from every 8th to every 10th viseme
+    // Avoid repeating the same viseme more than twice in a row
+    // This ensures more visible animation
+    if (prevVisemeId === prevPrevVisemeId) {
+      // Force a change to a different viseme group
+      if (prevVisemeId >= 0 && prevVisemeId <= 5) {
+        // If previous was in the 0-5 range, choose from 6-11
+        visemeId = 6 + Math.floor(Math.random() * 6);
+      } else if (prevVisemeId >= 6 && prevVisemeId <= 11) {
+        // If previous was in the 6-11 range, choose from either 0-5 or 12-16
+        const group = Math.random() < 0.7 ? 0 : 12;
+        visemeId = group + Math.floor(Math.random() * 5);
+      } else {
+        // If previous was 12+, choose from 0-11
+        visemeId = Math.floor(Math.random() * 12);
+      }
+    } else if (prevVisemeId === 0) {
+      // If previous was neutral/closed, always open mouth with dramatic viseme
+      // Choose from the most visually distinct open mouth visemes
+      visemeId = [2, 3, 6, 9, 11][Math.floor(Math.random() * 5)];
+    } else if (i % 12 === 0) {
+      // Much less frequently return to neutral position (viseme 0) 
+      // Changed from every 10th to every 12th viseme
       visemeId = 0;
-    } else if (i % 3 === 0) {
-      // Every third viseme, use one of the more common mouth shapes
-      visemeId = [1, 2, 3, 4, 6][Math.floor(Math.random() * 5)];
     } else {
-      // Otherwise use a weighted distribution of visemes
+      // Normal viseme selection with weighted distribution
       // More common visemes get higher probability
-      const commonVisemes = [1, 2, 3, 4, 6, 8, 10]; // Most common mouth positions
-      const lessCommonVisemes = [5, 7, 9, 11, 12, 13, 14]; // Less common
-      const rareVisemes = [15, 16, 17, 18, 19, 20, 21]; // Rarely used
+      // Focusing on the most visually distinct mouth shapes
+      const dramaticVisemes = [2, 3, 6, 9, 11]; // Very distinct shapes
+      const commonVisemes = [1, 4, 7, 8, 10]; // Common but less dramatic
+      const lessCommonVisemes = [5, 12, 13, 14, 19]; // Less common
+      const rareVisemes = [15, 16, 17, 18, 20, 21]; // Rarely used
       
       const random = Math.random();
-      if (random < 0.6) { // Reduced from 0.7 to 0.6 to increase variety
-        // 60% chance of common viseme
+      if (random < 0.5) { // Increased dramatic visemes from ~30% to 50%
+        // 50% chance of highly dramatic viseme
+        visemeId = dramaticVisemes[Math.floor(Math.random() * dramaticVisemes.length)];
+      } else if (random < 0.75) { // 25% chance of common viseme
         visemeId = commonVisemes[Math.floor(Math.random() * commonVisemes.length)];
-      } else if (random < 0.85) { // Reduced from 0.9 to 0.85 to increase variety
-        // 25% chance of less common viseme
+      } else if (random < 0.9) { // 15% chance of less common viseme
         visemeId = lessCommonVisemes[Math.floor(Math.random() * lessCommonVisemes.length)];
-      } else {
-        // 15% chance of rare viseme
+      } else { // 10% chance of rare viseme
         visemeId = rareVisemes[Math.floor(Math.random() * rareVisemes.length)];
       }
     }
@@ -592,13 +615,19 @@ function generateManualVisemes(textLength, startOffset = 0) {
   // Make sure we're not ending with viseme 0 in case that was the last randomly chosen one
   if (visemeData[visemeData.length - 1].visemeId === 0) {
     // Replace with a more visible closing viseme
-    visemeData[visemeData.length - 1].visemeId = 1;
+    visemeData[visemeData.length - 1].visemeId = 9; // Wide open, very noticeable
   }
   
-  // Add a final neutral viseme 0 at the end
+  // Add a final wide viseme before closing
+  visemeData.push({
+    visemeId: 2, // Dramatic open
+    audioOffset: startOffset + (numVisemes * avgDuration)
+  });
+  
+  // Then add final neutral viseme 0 at the end
   visemeData.push({
     visemeId: 0, 
-    audioOffset: startOffset + (numVisemes * avgDuration)
+    audioOffset: startOffset + (numVisemes * avgDuration) + avgDuration
   });
   
   // Log some statistics about the generated visemes
