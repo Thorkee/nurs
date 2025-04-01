@@ -151,9 +151,9 @@ export const transcribeSpeech = async (audioBlob) => {
     formData.append('file', compressedAudio, 'recording.wav');
     formData.append('model', 'whisper');
     // You may need to specify language or other parameters based on Azure OpenAI API requirements
-    formData.append('language', 'yue'); // Specifying Cantonese (ISO code for Cantonese/Yue)
+    formData.append('language', 'zh'); // Specifying Chinese (Whisper doesn't accept 'yue' for Cantonese)
     // Add prompt to ensure Hong Kong style Cantonese transcription for a nurse
-    formData.append('prompt', 'This is a transcription for a Hong Kong based nurse discussing medical procedures. Transcribe in Hong Kong style Cantonese using Traditional Chinese characters. Use Hong Kong specific expressions, medical terminology, and Cantonese particles like 嘅, 啦, 喎, 咩, 囉, etc. Always use Hong Kong written style with characters like 係, 唔係, 嚟, 喺, 俾 instead of Mandarin equivalents. Common medical terms in this context include: 大腸內窺鏡 (colonoscopy), 腸胃科 (gastroenterology), 瀉藥 (laxative), 腸道準備 (bowel preparation), 麻醉 (anesthesia), 檢查 (examination), 風險 (risks), 副作用 (side effects), etc.');
+    formData.append('prompt', 'IMPORTANT: This is a Cantonese (NOT Mandarin) transcription for a Hong Kong based nurse discussing medical procedures. The speaker is using Cantonese. Transcribe in Hong Kong style Cantonese using Traditional Chinese characters. Always use Cantonese pronunciation characters and Hong Kong written style (e.g., 係 not 是, 唔係 not 不是, 嚟 not 來, 喺 not 在, 俾 not 給). Include Hong Kong specific Cantonese particles like 嘅, 啦, 喎, 咩, 囉, 喇, 咗, 嗰, 嘢, 哋, 嗱. Common medical terms in this context include: 大腸內窺鏡 (colonoscopy), 腸胃科 (gastroenterology), 瀉藥 (laxative), 腸道準備 (bowel preparation), 麻醉 (anesthesia), 檢查 (examination), 風險 (risks), 副作用 (side effects), etc. Always output Cantonese, never Mandarin.');
 
     // Get API credentials from environment variables - using Whisper-specific variables if available
     const apiKey = import.meta.env.VITE_AZURE_WHISPER_API_KEY || import.meta.env.VITE_AZURE_OPENAI_API_KEY;
