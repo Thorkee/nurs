@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import './PatientSimulator.css';
 import SpeechTest from './SpeechTest';
 import VisemeFace from './VisemeFace';
@@ -215,12 +215,10 @@ const PatientSimulator = ({ isActive, onStart, onStop, onConversationUpdate, onA
       
       if (useViseme) {
         try {
-          console.log('Starting TTS process for response:', response);
           let result;
           
           // If we already started processing the first sentence, use that result and process the rest
           if (processingFirstSentence && firstSentencePromise) {
-            console.log('Processing first sentence result');
             // Wait for first sentence TTS to complete
             const firstSentenceResult = await firstSentencePromise;
             
@@ -234,7 +232,6 @@ const PatientSimulator = ({ isActive, onStart, onStop, onConversationUpdate, onA
               // Full response minus what was already processed
               const remainingText = response.substring(firstSentenceResult.text?.length || 0);
               if (remainingText.length > 10) {
-                console.log('Processing remaining text:', remainingText);
                 result = await textToSpeechWithViseme(response);
               } else {
                 result = firstSentenceResult;
@@ -244,26 +241,22 @@ const PatientSimulator = ({ isActive, onStart, onStop, onConversationUpdate, onA
             }
           } else {
             // Process the full response normally if we haven't started early TTS
-            console.log('Processing full response');
             result = await textToSpeechWithViseme(response);
-            
-            if (!result.audioUrl) {
-              console.error('No audio URL in TTS result');
-              throw new Error('Failed to generate speech: No audio URL received');
-            }
-            
             setCurrentAudioUrl(result.audioUrl);
-            setVisemeData(result.visemeData || []);
+            setVisemeData(result.visemeData);
             setIsVisemePlaying(true);
           }
           
           // Capture the response audio in the background
           setTimeout(() => captureAudioForSaving(result.audioUrl), 0);
           
-        } catch (error) {
-          console.error('TTS error:', error);
-          setError(`Failed to convert text to speech: ${error.message}`);
-          // Continue with conversation even if TTS fails
+        } catch (audioErr) {
+          console.error('Text-to-speech with viseme error:', audioErr);
+          setError(`音頻生成錯誤: ${audioErr.message}`);
+          setIsVisemePlaying(false);
+          
+          // Fall back to regular text-to-speech
+          fallbackToRegularTTS(response);
         }
       } else {
         // Regular text-to-speech without viseme
@@ -572,12 +565,9 @@ const PatientSimulator = ({ isActive, onStart, onStop, onConversationUpdate, onA
     };
   }, [isActive, onAudioRecorded]);
 
-  const handleVisemePlayComplete = useCallback(() => {
-    console.log('Viseme playback completed');
+  const handleVisemePlayComplete = () => {
     setIsVisemePlaying(false);
-    setVisemeData([]);
-    setCurrentAudioUrl('');
-  }, []);
+  };
 
   // Clean up audio resources
   useEffect(() => {
@@ -671,7 +661,7 @@ const PatientSimulator = ({ isActive, onStart, onStop, onConversationUpdate, onA
                 {/* Show only the avatar in fullscreen mode */}
                 <div className="viseme-animation-container fullscreen-face">
                   <VisemeFace 
-                    visemeData={visemeData}
+                    visemeData={visemeData.length > 0 ? visemeData : []}
                     audioUrl={currentAudioUrl}
                     isPlaying={isVisemePlaying}
                     onPlayComplete={handleVisemePlayComplete}
@@ -759,7 +749,7 @@ const PatientSimulator = ({ isActive, onStart, onStop, onConversationUpdate, onA
               {/* Always show the avatar whether there's a response or not */}
               <div className="viseme-animation-container">
                 <VisemeFace 
-                  visemeData={visemeData}
+                  visemeData={visemeData.length > 0 ? visemeData : []}
                   audioUrl={currentAudioUrl}
                   isPlaying={isVisemePlaying}
                   onPlayComplete={handleVisemePlayComplete}
