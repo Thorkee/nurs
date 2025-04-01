@@ -14,16 +14,19 @@
   width: 100%;
   max-width: 100%;
   border-radius: 0;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.06);
 }
 
 @media (min-width: 1201px) {
   .chatbot-app {
     padding: 0;
+    background: linear-gradient(135deg, #f5f7fa, #edf0f5);
   }
   
   .chatbot-app .chat-container {
     max-width: 100%;
     border-radius: 0;
+    margin: 0 auto;
   }
 }
 
