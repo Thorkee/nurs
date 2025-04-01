@@ -3,113 +3,113 @@ import React, { useEffect, useRef, useState, memo } from 'react';
 // More expressive mouth positions for different visemes
 const mouthPositions = {
   0: { // Silence
-    path: "M48,70 Q57,68 65,68 Q73,68 82,70",
-    innerPath: "M50,70 Q65,70 80,70",
+    path: "M50,70 Q57,68 65,69 Q73,68 80,70",
+    innerPath: "M52,70 Q65,69.5 78,70",
     description: "Silence/Rest"
   },
   1: { // æ, ə, ʌ
-    path: "M47,73 Q57,77 65,78 Q73,77 83,73",
-    innerPath: "M50,73 Q65,75 80,73",
+    path: "M48,74 Q57,80 65,81 Q73,80 82,74",
+    innerPath: "M50,74 Q65,77 80,74",
     description: "Slight Open"
   },
-  2: { // ɑ - Wide open
-    path: "M45,78 Q57,88 65,90 Q73,88 85,78",
-    innerPath: "M48,80 Q65,85 82,80",
+  2: { // ɑ - Open but less exaggerated
+    path: "M45,80 Q57,92 65,94 Q73,92 85,80",
+    innerPath: "M48,81 Q65,89 82,81",
     description: "Open"
   },
-  3: { // ɔ - Rounded open
-    path: "M48,76 Q57,85 65,87 Q73,85 82,76",
-    innerPath: "M50,77 Q65,83 80,77",
+  3: { // ɔ - Rounded open, more controlled
+    path: "M50,78 Q57,88 65,90 Q73,88 80,78",
+    innerPath: "M52,79 Q65,85 78,79",
     description: "Rounded Open"
   },
-  4: { // ɛ, ʊ - Mid open
-    path: "M48,74 Q57,82 65,84 Q73,82 82,74",
-    innerPath: "M50,75 Q65,80 80,75",
+  4: { // ɛ, ʊ - Mid open, more realistic
+    path: "M48,76 Q57,84 65,86 Q73,84 82,76",
+    innerPath: "M50,76 Q65,81 80,76",
     description: "Mid Open"
   },
-  5: { // ɝ - R-sound
-    path: "M50,73 Q57,78 65,80 Q73,78 80,73",
-    innerPath: "M52,74 Q65,77 78,74",
+  5: { // ɝ - R-sound, slightly restrained
+    path: "M50,75 Q57,82 65,84 Q73,82 80,75",
+    innerPath: "M52,75 Q65,78 78,75",
     description: "R-sound"
   },
-  6: { // j, i, ɪ - Smile
-    path: "M43,69 Q55,73 65,74 Q75,73 87,69",
-    innerPath: "M45,70 Q65,72 85,70",
+  6: { // j, i, ɪ - More subtle smile
+    path: "M45,68 Q57,72 65,73 Q73,72 85,68",
+    innerPath: "M47,69 Q65,71 83,69",
     description: "Smile"
   },
-  7: { // w, u - Rounded
-    path: "M55,70 Q65,62 75,70",
-    innerPath: "M57,70 Q65,65 73,70",
+  7: { // w, u - Asian pronunciation, less rounded
+    path: "M55,72 Q65,64 75,72",
+    innerPath: "M57,71 Q65,66 73,71",
     description: "Rounded"
   },
-  8: { // o - Small rounded
-    path: "M53,70 Q65,65 77,70",
-    innerPath: "M55,70 Q65,67 75,70",
+  8: { // o - Small rounded, adjusted for Asian pronunciation
+    path: "M53,72 Q65,67 77,72",
+    innerPath: "M55,71 Q65,68 75,71",
     description: "Small Rounded"
   },
-  9: { // aʊ - Wide open
-    path: "M45,78 Q57,87 65,89 Q73,87 85,78",
-    innerPath: "M48,79 Q65,84 82,79",
+  9: { // aʊ - Wide open but less dramatic
+    path: "M45,80 Q57,91 65,92 Q73,91 85,80",
+    innerPath: "M48,80 Q65,88 82,80",
     description: "Wide Open"
   },
-  10: { // ɔɪ - Complex round
-    path: "M48,74 Q57,82 65,84 Q73,82 82,74",
-    innerPath: "M50,75 Q65,80 80,75",
+  10: { // ɔɪ - Complex round, more controlled
+    path: "M47,76 Q57,84 65,86 Q73,84 83,76",
+    innerPath: "M50,76 Q65,81 80,76",
     description: "Complex Round"
   },
-  11: { // aɪ - Complex open
-    path: "M47,75 Q57,83 65,85 Q73,83 83,75",
-    innerPath: "M49,76 Q65,81 81,76",
+  11: { // aɪ - Complex open, more natural
+    path: "M46,78 Q57,88 65,90 Q73,88 84,78",
+    innerPath: "M49,79 Q65,85 81,79",
     description: "Complex Open"
   },
-  12: { // h - Breathing
-    path: "M48,72 Q57,78 65,80 Q73,78 82,72",
-    innerPath: "M50,73 Q65,76 80,73",
+  12: { // h - Restrained breathing
+    path: "M48,74 Q57,80 65,82 Q73,80 82,74",
+    innerPath: "M50,75 Q65,78 80,75",
     description: "Breathing"
   },
-  13: { // ɹ - R-sound
-    path: "M50,71 Q57,76 65,78 Q73,76 80,71",
-    innerPath: "M52,72 Q65,74 78,72",
+  13: { // ɹ - Subtle R-sound, Asian accent
+    path: "M50,72 Q57,78 65,79 Q73,78 80,72",
+    innerPath: "M52,73 Q65,76 78,73",
     description: "R-sound"
   },
-  14: { // l - L-sound
-    path: "M50,70 Q57,74 65,76 Q73,74 80,70",
+  14: { // l - L-sound, Asian accent
+    path: "M50,71 Q57,75 65,76 Q73,75 80,71",
     innerPath: "M52,71 Q65,73 78,71",
     description: "L-sound"
   },
-  15: { // s, z - S/Z sound
+  15: { // s, z - S/Z sound, more natural
     path: "M52,70 Q65,69 78,70",
-    innerPath: "M54,70 Q65,69 76,70",
+    innerPath: "M54,70 Q65,69.5 76,70",
     description: "S/Z Sound"
   },
-  16: { // ʃ, tʃ, dʒ, ʒ - SH sound
-    path: "M52,70 Q65,67 78,70",
-    innerPath: "M54,70 Q65,68 76,70",
+  16: { // ʃ, tʃ, dʒ, ʒ - SH sound, Asian accent
+    path: "M53,70 Q65,67 77,70",
+    innerPath: "M55,70 Q65,68 75,70",
     description: "SH Sound"
   },
-  17: { // ð - TH sound
-    path: "M48,70 Q57,74 65,76 Q73,74 82,70",
-    innerPath: "M50,71 Q65,73 80,71",
+  17: { // ð - TH sound, often challenging for Asian speakers
+    path: "M50,70 Q57,73 65,74 Q73,73 80,70",
+    innerPath: "M52,71 Q65,72 78,71",
     description: "TH Sound"
   },
-  18: { // f, v - F/V sound
-    path: "M52,69 Q57,64 65,63 Q73,64 78,69",
-    innerPath: "M54,69 Q65,65 76,69",
+  18: { // f, v - F/V sound, Asian pronunciation
+    path: "M52,69 Q57,65 65,64 Q73,65 78,69",
+    innerPath: "M54,69 Q65,66 76,69",
     description: "F/V Sound"
   },
-  19: { // d, t, n, θ - D/T sound
-    path: "M50,70 Q57,73 65,75 Q73,73 80,70",
-    innerPath: "M52,71 Q65,72 78,71",
+  19: { // d, t, n, θ - D/T sound, Asian accent
+    path: "M50,70 Q57,72 65,73 Q73,72 80,70",
+    innerPath: "M52,71 Q65,71.5 78,71",
     description: "D/T Sound"
   },
-  20: { // k, g, ŋ - K/G sound
-    path: "M50,70 Q57,71 65,73 Q73,71 80,70",
-    innerPath: "M52,70 Q65,71 78,70",
+  20: { // k, g, ŋ - K/G sound, subtle
+    path: "M50,70 Q57,71 65,72 Q73,71 80,70",
+    innerPath: "M52,70 Q65,70.5 78,70",
     description: "K/G Sound"
   },
-  21: { // p, b, m - P/B/M sound
-    path: "M54,69 Q65,66 76,69",
-    innerPath: "M56,69 Q65,67 74,69",
+  21: { // p, b, m - P/B/M sound, Asian accent
+    path: "M55,69 Q65,66 75,69",
+    innerPath: "M57,69 Q65,67 73,69",
     description: "P/B/M Sound"
   }
 };
@@ -316,17 +316,17 @@ const VisemeFace = memo(({ visemeData, audioUrl, isPlaying, onPlayComplete }) =>
     // Reset transition progress
     setVisemeTransition(0);
     
-    // Create a faster but smoother transition
-    const transitionDuration = 65; // ms - slightly faster for more responsive animation
+    // More controlled transition for older speaker - slightly slower, more deliberate
+    const transitionDuration = 80; // ms - slightly slower for more realistic movement of older person
     const startTime = performance.now();
     
     const updateTransition = () => {
       const elapsed = performance.now() - startTime;
       let progress = Math.min(1, elapsed / transitionDuration);
       
-      // Use easeOutQuad for smoother acceleration/deceleration
-      // t*(2-t) creates a more natural feel than linear
-      progress = progress * (2 - progress);
+      // Custom easing function - more controlled, less bouncy
+      // This creates a more mature, deliberate mouth movement
+      progress = progress < 0.5 ? 2 * progress * progress : -1 + (4 - 2 * progress) * progress;
       
       if (progress < 1) {
         setVisemeTransition(progress);
@@ -400,274 +400,129 @@ const VisemeFace = memo(({ visemeData, audioUrl, isPlaying, onPlayComplete }) =>
     };
   };
   
-  // Enhanced eyes with more expressive look and highlights
+  // Render eyes with blinking
   const renderEyes = () => {
     // Calculate eye shape based on blink state
-    const eyeHeight = 6 * blinkState; // Slightly larger eyes
+    const eyeHeight = 4.5 * blinkState; // Smaller, more asian-looking eyes
     
     // Make eyes slightly more expressive based on viseme
-    // For certain visemes (like surprised or wide open mouth), eyes react slightly
     const isWideOpenMouth = [2, 9, 11].includes(currentViseme);
     const isSmileMouth = [6].includes(currentViseme);
     
     // Adjust eye height based on mouth shape
     const eyeHeightAdjusted = isWideOpenMouth ? eyeHeight * 1.15 : 
-                              isSmileMouth ? eyeHeight * 0.9 : eyeHeight;
+                              isSmileMouth ? eyeHeight * 0.85 : eyeHeight;
     
-    // Eye position adjustments - slight upward look for wide mouth, slight down for smile
+    // Eye position adjustments
     const eyeYPosition = isWideOpenMouth ? 44 : isSmileMouth ? 45.5 : 45;
     
     return (
       <>
-        {/* Eyelids - slight shadow above eyes */}
+        {/* Asian eye shape - epicanthic fold */}
+        <path 
+          d={`M35,${eyeYPosition-eyeHeightAdjusted/2} Q40,${eyeYPosition-eyeHeightAdjusted*1.2} 45,${eyeYPosition-eyeHeightAdjusted/1.5}`}
+          fill="none"
+          stroke="#333"
+          strokeWidth="1"
+          opacity="0.6"
+        />
+        <path 
+          d={`M75,${eyeYPosition-eyeHeightAdjusted/2} Q80,${eyeYPosition-eyeHeightAdjusted*1.2} 85,${eyeYPosition-eyeHeightAdjusted/1.5}`}
+          fill="none"
+          stroke="#333"
+          strokeWidth="1"
+          opacity="0.6"
+        />
+        
+        {/* Eyelids shadow - aged appearance */}
         <path 
           d={`M37,${eyeYPosition-eyeHeightAdjusted/1.2} Q45,${eyeYPosition-eyeHeightAdjusted*1.1} 53,${eyeYPosition-eyeHeightAdjusted/1.2}`}
           fill="none"
           stroke="#88665D"
           strokeWidth="1.5"
-          opacity="0.3"
+          opacity="0.5"
         />
         <path 
           d={`M77,${eyeYPosition-eyeHeightAdjusted/1.2} Q85,${eyeYPosition-eyeHeightAdjusted*1.1} 93,${eyeYPosition-eyeHeightAdjusted/1.2}`}
           fill="none"
           stroke="#88665D"
           strokeWidth="1.5"
-          opacity="0.3"
+          opacity="0.5"
         />
         
-        {/* Left eye */}
-        <ellipse
-          cx="45" 
-          cy={eyeYPosition} 
-          rx="8.5"
-          ry={eyeHeightAdjusted} 
+        {/* Left eye - more almond shaped */}
+        <path
+          d={`M38,${eyeYPosition} Q45,${eyeYPosition+eyeHeightAdjusted} 52,${eyeYPosition} Q45,${eyeYPosition-eyeHeightAdjusted} 38,${eyeYPosition}`}
           fill="white"
           stroke="#333"
           strokeWidth="1"
         />
         
-        {/* Eye shadow under eye */}
+        {/* Aged appearance - slight eye bags */}
         <path 
-          d={`M37,${eyeYPosition+eyeHeightAdjusted/1.5} Q45,${eyeYPosition+eyeHeightAdjusted*1.1} 53,${eyeYPosition+eyeHeightAdjusted/1.5}`}
+          d={`M37,${eyeYPosition+eyeHeightAdjusted/1.2} Q45,${eyeYPosition+eyeHeightAdjusted*1.8} 53,${eyeYPosition+eyeHeightAdjusted/1.2}`}
           fill="none"
           stroke="#88665D"
           strokeWidth="1"
-          opacity="0.2"
+          opacity="0.4"
         />
         
-        {/* Left iris & pupil */}
+        {/* Left iris & pupil - dark brown */}
         <circle 
           cx="45" 
           cy={eyeYPosition} 
-          r={blinkState * 3.5} 
-          fill="#6B4F4F"
+          r={blinkState * 3.2} 
+          fill="#4A3520"
         />
         <circle 
           cx="45" 
           cy={eyeYPosition} 
-          r={blinkState * 2} 
-          fill="#333"
+          r={blinkState * 1.8} 
+          fill="#1A1108"
         />
         {/* Light reflection in eye */}
         <circle 
           cx="46.5" 
           cy={eyeYPosition-1} 
-          r={blinkState * 0.8} 
+          r={blinkState * 0.7} 
           fill="white"
           opacity="0.8"
         />
         
-        {/* Right eye */}
-        <ellipse
-          cx="85" 
-          cy={eyeYPosition} 
-          rx="8.5"
-          ry={eyeHeightAdjusted} 
+        {/* Right eye - more almond shaped */}
+        <path
+          d={`M78,${eyeYPosition} Q85,${eyeYPosition+eyeHeightAdjusted} 92,${eyeYPosition} Q85,${eyeYPosition-eyeHeightAdjusted} 78,${eyeYPosition}`}
           fill="white"
           stroke="#333"
           strokeWidth="1"
         />
         
-        {/* Eye shadow under eye */}
+        {/* Aged appearance - slight eye bags */}
         <path 
-          d={`M77,${eyeYPosition+eyeHeightAdjusted/1.5} Q85,${eyeYPosition+eyeHeightAdjusted*1.1} 93,${eyeYPosition+eyeHeightAdjusted/1.5}`}
+          d={`M77,${eyeYPosition+eyeHeightAdjusted/1.2} Q85,${eyeYPosition+eyeHeightAdjusted*1.8} 93,${eyeYPosition+eyeHeightAdjusted/1.2}`}
           fill="none"
           stroke="#88665D"
           strokeWidth="1"
-          opacity="0.2"
+          opacity="0.4"
         />
         
-        {/* Right iris & pupil */}
+        {/* Right iris & pupil - dark brown */}
         <circle 
           cx="85" 
           cy={eyeYPosition} 
-          r={blinkState * 3.5} 
-          fill="#6B4F4F"
+          r={blinkState * 3.2} 
+          fill="#4A3520"
         />
         <circle 
           cx="85" 
           cy={eyeYPosition} 
-          r={blinkState * 2} 
-          fill="#333"
+          r={blinkState * 1.8} 
+          fill="#1A1108"
         />
         {/* Light reflection in eye */}
         <circle 
           cx="86.5" 
           cy={eyeYPosition-1} 
-          r={blinkState * 0.8} 
-          fill="white"
-          opacity="0.8"
-        />
-      </>
-    );
-  };
-  
-  // Asian male eyes with appropriate shape and features for 58-year-old
-  const renderEyes = () => {
-    // Calculate eye shape based on blink state
-    // Asian eyes often have a flatter, more horizontal shape with epicanthic fold
-    const eyeHeight = 4.5 * blinkState; // Slightly smaller eye opening height
-    
-    // Make eyes slightly more expressive based on viseme
-    const isWideOpenMouth = [2, 9, 11].includes(currentViseme);
-    const isSmileMouth = [6].includes(currentViseme);
-    
-    // Adjust eye height based on mouth shape
-    const eyeHeightAdjusted = isWideOpenMouth ? eyeHeight * 1.1 : 
-                              isSmileMouth ? eyeHeight * 0.85 : eyeHeight;
-    
-    // Eye position
-    const eyeYPosition = isWideOpenMouth ? 45 : isSmileMouth ? 46 : 45.5;
-    
-    // For the epicanthic fold (inner eye fold characteristic of Asian eyes)
-    const leftEyeInnerX = 39;
-    const rightEyeInnerX = 91;
-    
-    return (
-      <>
-        {/* Upper eyelids with Asian characteristics */}
-        <path 
-          d={`M37,${eyeYPosition-eyeHeightAdjusted/1.3} Q45,${eyeYPosition-eyeHeightAdjusted*1.1} 53,${eyeYPosition-eyeHeightAdjusted/1.3}`}
-          fill="none"
-          stroke="#88665D"
-          strokeWidth="1"
-          opacity="0.4"
-        />
-        <path 
-          d={`M77,${eyeYPosition-eyeHeightAdjusted/1.3} Q85,${eyeYPosition-eyeHeightAdjusted*1.1} 93,${eyeYPosition-eyeHeightAdjusted/1.3}`}
-          fill="none"
-          stroke="#88665D"
-          strokeWidth="1"
-          opacity="0.4"
-        />
-        
-        {/* Eye bags/lines for 58-year-old */}
-        <path 
-          d={`M36,${eyeYPosition+6} Q45,${eyeYPosition+8} 54,${eyeYPosition+6}`}
-          fill="none"
-          stroke="#9B7A5A"
-          strokeWidth="0.8"
-          opacity="0.4"
-        />
-        <path 
-          d={`M76,${eyeYPosition+6} Q85,${eyeYPosition+8} 94,${eyeYPosition+6}`}
-          fill="none"
-          stroke="#9B7A5A"
-          strokeWidth="0.8"
-          opacity="0.4"
-        />
-        
-        {/* Left eye - flatter for Asian features */}
-        <ellipse
-          cx="45" 
-          cy={eyeYPosition} 
-          rx="9"
-          ry={eyeHeightAdjusted} 
-          fill="white"
-          stroke="#333"
-          strokeWidth="1"
-        />
-        
-        {/* Left eye epicanthic fold (inner corner) */}
-        <path 
-          d={`M${leftEyeInnerX-1},${eyeYPosition-1} Q${leftEyeInnerX},${eyeYPosition-eyeHeightAdjusted*0.8} ${leftEyeInnerX+1},${eyeYPosition+1}`}
-          fill="url(#faceGradient)"
-          stroke="none"
-        />
-        <path 
-          d={`M${leftEyeInnerX-1},${eyeYPosition-1} Q${leftEyeInnerX},${eyeYPosition-eyeHeightAdjusted*0.8} ${leftEyeInnerX+1},${eyeYPosition+1}`}
-          fill="none"
-          stroke="#333"
-          strokeWidth="0.7"
-          opacity="0.7"
-        />
-        
-        {/* Left iris - dark brown for Asian eyes */}
-        <circle 
-          cx="45" 
-          cy={eyeYPosition} 
-          r={blinkState * 3} 
-          fill="#3A2A1E"
-        />
-        <circle 
-          cx="45" 
-          cy={eyeYPosition} 
-          r={blinkState * 1.7} 
-          fill="#1A1207"
-        />
-        
-        {/* Light reflection in eye */}
-        <circle 
-          cx="46" 
-          cy={eyeYPosition-0.8} 
-          r={blinkState * 0.7} 
-          fill="white"
-          opacity="0.8"
-        />
-        
-        {/* Right eye - flatter for Asian features */}
-        <ellipse
-          cx="85" 
-          cy={eyeYPosition} 
-          rx="9"
-          ry={eyeHeightAdjusted} 
-          fill="white"
-          stroke="#333"
-          strokeWidth="1"
-        />
-        
-        {/* Right eye epicanthic fold (inner corner) */}
-        <path 
-          d={`M${rightEyeInnerX+1},${eyeYPosition-1} Q${rightEyeInnerX},${eyeYPosition-eyeHeightAdjusted*0.8} ${rightEyeInnerX-1},${eyeYPosition+1}`}
-          fill="url(#faceGradient)"
-          stroke="none"
-        />
-        <path 
-          d={`M${rightEyeInnerX+1},${eyeYPosition-1} Q${rightEyeInnerX},${eyeYPosition-eyeHeightAdjusted*0.8} ${rightEyeInnerX-1},${eyeYPosition+1}`}
-          fill="none"
-          stroke="#333"
-          strokeWidth="0.7"
-          opacity="0.7"
-        />
-        
-        {/* Right iris - dark brown for Asian eyes */}
-        <circle 
-          cx="85" 
-          cy={eyeYPosition} 
-          r={blinkState * 3} 
-          fill="#3A2A1E"
-        />
-        <circle 
-          cx="85" 
-          cy={eyeYPosition} 
-          r={blinkState * 1.7} 
-          fill="#1A1207"
-        />
-        
-        {/* Light reflection in eye */}
-        <circle 
-          cx="86" 
-          cy={eyeYPosition-0.8} 
           r={blinkState * 0.7} 
           fill="white"
           opacity="0.8"
@@ -676,73 +531,70 @@ const VisemeFace = memo(({ visemeData, audioUrl, isPlaying, onPlayComplete }) =>
     );
   };
   
-  // Render eyebrows with more subtle Asian male features
+  // Render eyebrows with subtle movement based on viseme
   const renderEyebrows = () => {
-    // Asian male eyebrows tend to be straighter and less arched
-    // For a 58-year-old, slightly thicker with some gray
-    
-    // Adjust eyebrows based on mouth shape - subtle expressions for Asian male
+    // Adjust eyebrows based on mouth shape - subtle expressions
     const isWideOpenMouth = [2, 9, 11].includes(currentViseme);
     const isSmileMouth = [6].includes(currentViseme);
     const isNarrowMouth = [7, 8, 15, 16, 21].includes(currentViseme);
     
-    // Eyebrow positions - straighter and more horizontal for Asian features
+    // Eyebrow positions - straighter, more horizontal for Asian appearance
     let leftBrowPath, rightBrowPath;
     
     if (isWideOpenMouth) {
-      // Surprised expression - slightly raised
-      leftBrowPath = "M35,33 Q45,29 56,33";
-      rightBrowPath = "M74,33 Q85,29 95,33";
+      // Surprised expression - eyebrows raised
+      leftBrowPath = "M33,32 Q45,28 57,32";
+      rightBrowPath = "M73,32 Q85,28 97,32";
     } else if (isSmileMouth) {
-      // Happy expression - subtle movement
-      leftBrowPath = "M35,35 Q45,33 56,35";
-      rightBrowPath = "M74,35 Q85,33 95,35";
+      // Happy expression - eyebrows slightly curved
+      leftBrowPath = "M35,36 Q45,34 55,36";
+      rightBrowPath = "M75,36 Q85,34 95,36";
     } else if (isNarrowMouth) {
-      // Focused expression - slightly angled
-      leftBrowPath = "M35,34 Q45,32 56,35";
-      rightBrowPath = "M74,35 Q85,32 95,34";
+      // Focused expression - eyebrows slightly angled
+      leftBrowPath = "M35,34 Q45,32 55,35";
+      rightBrowPath = "M75,35 Q85,32 95,34";
     } else {
       // Neutral expression - straighter brows
-      leftBrowPath = "M35,34 Q45,33 56,34";
-      rightBrowPath = "M74,34 Q85,33 95,34";
+      leftBrowPath = "M35,35 Q45,33 55,35";
+      rightBrowPath = "M75,35 Q85,33 95,35";
     }
     
     return (
       <>
-        {/* Thicker eyebrows with slight gray coloring */}
+        {/* Thicker, darker eyebrows with some gray for age */}
         <path 
           d={leftBrowPath} 
           fill="none" 
-          stroke="#333" 
-          strokeWidth="2.5"
+          stroke="#222" 
+          strokeWidth="2.8"
           strokeLinecap="round"
         />
         <path 
           d={rightBrowPath} 
           fill="none" 
-          stroke="#333" 
-          strokeWidth="2.5"
+          stroke="#222" 
+          strokeWidth="2.8"
           strokeLinecap="round"
         />
         
-        {/* Subtle gray accents in eyebrows */}
+        {/* Gray hairs in eyebrows */}
         <path 
           d={leftBrowPath} 
           fill="none" 
-          stroke="#777"
+          stroke="#888" 
           strokeWidth="0.8"
           strokeLinecap="round"
-          strokeDasharray="2,3"
-          opacity="0.5"
+          strokeDasharray="2,4"
+          opacity="0.6"
         />
         <path 
-          d={rightBrowPath}
+          d={rightBrowPath} 
           fill="none" 
-          stroke="#777"
+          stroke="#888" 
           strokeWidth="0.8"
           strokeLinecap="round"
-          strokeDasharray="2,3"
-          opacity="0.5"
+          strokeDasharray="2,4"
+          opacity="0.6"
         />
       </>
     );
@@ -772,34 +624,133 @@ const VisemeFace = memo(({ visemeData, audioUrl, isPlaying, onPlayComplete }) =>
         {/* Face background with subtle gradient */}
         <defs>
           <radialGradient id="faceGradient" cx="65" cy="60" r="60" gradientUnits="userSpaceOnUse">
-            <stop offset="0%" stopColor="#FFEBC9" />
-            <stop offset="95%" stopColor="#F5D08A" />
+            <stop offset="0%" stopColor="#F2D4B1" />
+            <stop offset="95%" stopColor="#E3BC8F" />
           </radialGradient>
+          
+          {/* Subtle skin texture */}
+          <pattern id="skinTexture" patternUnits="userSpaceOnUse" width="10" height="10">
+            <rect width="10" height="10" fill="url(#faceGradient)" />
+            <path d="M0,0 L10,10 M10,0 L0,10" stroke="#D5AA80" strokeWidth="0.2" opacity="0.1" />
+          </pattern>
         </defs>
         
+        {/* Base face */}
         <circle 
           cx="65" 
           cy="65" 
           r="60" 
-          fill="url(#faceGradient)" 
+          fill="url(#skinTexture)" 
           stroke="#333"
           strokeWidth="1"
         />
         
-        {/* Subtle cheeks */}
-        <circle 
-          cx="40" 
-          cy="72" 
-          r="8" 
-          fill="#FFBFBF"
+        {/* Add hairline - short, receding with some gray */}
+        <path
+          d="M25,40 Q45,20 65,15 Q85,20 105,40"
+          fill="none"
+          stroke="#333"
+          strokeWidth="3"
+          opacity="0.7"
+        />
+        <path
+          d="M25,40 Q45,20 65,15 Q85,20 105,40"
+          fill="none"
+          stroke="#888"
+          strokeWidth="2"
+          strokeDasharray="3,5"
+          opacity="0.5"
+        />
+        
+        {/* Age-appropriate features for 58-year-old Asian male */}
+        
+        {/* Forehead lines */}
+        <path
+          d="M40,30 Q65,25 90,30"
+          fill="none"
+          stroke="#BA9980"
+          strokeWidth="0.8"
+          opacity="0.3"
+        />
+        <path
+          d="M42,34 Q65,30 88,34"
+          fill="none"
+          stroke="#BA9980"
+          strokeWidth="0.7"
           opacity="0.25"
         />
-        <circle 
-          cx="90" 
-          cy="72" 
-          r="8" 
-          fill="#FFBFBF"
+        
+        {/* Age-appropriate cheeks - more angular for a man */}
+        <path 
+          d="M30,65 Q40,80 45,90"
+          fill="none"
+          stroke="#BA9980"
+          strokeWidth="0.9"
+          opacity="0.3"
+        />
+        <path 
+          d="M100,65 Q90,80 85,90"
+          fill="none"
+          stroke="#BA9980"
+          strokeWidth="0.9"
+          opacity="0.3"
+        />
+        
+        {/* Nasolabial folds - deeper at 58 */}
+        <path 
+          d="M47,62 Q50,75 55,85" 
+          fill="none" 
+          stroke="#BA9980" 
+          strokeWidth="1.2" 
+          opacity="0.4"
+        />
+        <path 
+          d="M83,62 Q80,75 75,85" 
+          fill="none" 
+          stroke="#BA9980" 
+          strokeWidth="1.2" 
+          opacity="0.4"
+        />
+        
+        {/* Crow's feet around eyes */}
+        <path 
+          d="M30,45 L35,43 M32,48 L37,47" 
+          fill="none" 
+          stroke="#BA9980" 
+          strokeWidth="0.8" 
+          opacity="0.3"
+        />
+        <path 
+          d="M100,45 L95,43 M98,48 L93,47" 
+          fill="none" 
+          stroke="#BA9980" 
+          strokeWidth="0.8" 
+          opacity="0.3"
+        />
+        
+        {/* Subtle malar (cheek) bags common in older Asian men */}
+        <path 
+          d="M35,60 Q45,65 55,62" 
+          fill="none" 
+          stroke="#BA9980" 
+          strokeWidth="0.8" 
           opacity="0.25"
+        />
+        <path 
+          d="M95,60 Q85,65 75,62" 
+          fill="none" 
+          stroke="#BA9980" 
+          strokeWidth="0.8" 
+          opacity="0.25"
+        />
+        
+        {/* Slight double chin - common in older men */}
+        <path 
+          d="M50,105 Q65,110 80,105" 
+          fill="none" 
+          stroke="#BA9980" 
+          strokeWidth="1" 
+          opacity="0.3"
         />
         
         {/* Eyes */}
@@ -808,94 +759,71 @@ const VisemeFace = memo(({ visemeData, audioUrl, isPlaying, onPlayComplete }) =>
         {/* Eyebrows */}
         {renderEyebrows()}
         
-        {/* Nose */}
+        {/* Asian male nose - broader, flatter bridge */}
         <path 
-          d="M65,50 L65,65 M58,65 Q65,70 72,65" 
+          d="M65,50 L65,65" 
           fill="none" 
           stroke="#333"
           strokeWidth="1.5"
         />
-        
-        {/* Mouth - Enhanced with lip definition */}
-        <g className="mouth">
-          {/* Lip outline */}
-          <path
-            d={getMouthPaths().outerPath}
-            fill="#e57373" 
-            stroke="#333"
-            strokeWidth="1.5"
-            strokeLinecap="round"
-          />
-          
-          {/* Inner mouth line */}
-          <path
-            d={getMouthPaths().innerPath}
-            fill="none" 
-            stroke="#7c2929"
-            strokeWidth="1"
-            strokeLinecap="round"
-            opacity="0.7"
-          />
-        </g>
-
-        {/* Asian male nose - characteristically flatter bridge, wider nostrils */}
         <path 
-          d="M65,48 L65,63" 
-          fill="none" 
-          stroke="#333"
-          strokeWidth="1.2"
-        />
-        <path 
-          d="M57,63 Q65,67 73,63" 
+          d="M56,65 Q65,72 74,65" 
           fill="none" 
           stroke="#333"
           strokeWidth="1.5"
         />
-        {/* Nostril indications */}
         <path 
-          d="M60,63 Q61,65 62,63" 
+          d="M60,55 Q65,53 70,55" 
           fill="none" 
           stroke="#333"
-          strokeWidth="0.8"
+          strokeWidth="1"
+          opacity="0.7"
         />
         <path 
-          d="M70,63 Q69,65 68,63" 
+          d="M60,65 Q65,62 70,65" 
           fill="none" 
-          stroke="#333"
-          strokeWidth="0.8"
+          stroke="#555"
+          strokeWidth="0.7"
+          opacity="0.5"
         />
         
-        {/* Mouth - Enhanced with thinner lip definition for Asian male */}
+        {/* Mouth - More realistic Asian male lips */}
         <g className="mouth">
-          {/* Lip outline - more natural color for older Asian male */}
+          {/* Subtle creases around mouth for age */}
+          <path
+            d={`M48,78 Q54,85 60,88`}
+            fill="none"
+            stroke="#BA9980"
+            strokeWidth="0.8"
+            opacity="0.4"
+          />
+          <path
+            d={`M82,78 Q76,85 70,88`}
+            fill="none"
+            stroke="#BA9980"
+            strokeWidth="0.8"
+            opacity="0.4"
+          />
+          
+          {/* Lip outline - thinner, more masculine */}
           <path
             d={getMouthPaths().outerPath}
-            fill="#C47063" 
-            stroke="#333"
-            strokeWidth="1"
+            fill="#C26D60" 
+            stroke="#444"
+            strokeWidth="1.2"
             strokeLinecap="round"
           />
           
-          {/* Inner mouth line */}
+          {/* Inner mouth line - darker, more subtle */}
           <path
             d={getMouthPaths().innerPath}
             fill="none" 
-            stroke="#8A4A42"
+            stroke="#693A34"
             strokeWidth="0.8"
             strokeLinecap="round"
-            opacity="0.7"
+            opacity="0.8"
           />
         </g>
-        
-        {/* Add subtle facial hair indication for 58-year-old male */}
-        <path
-          d="M50,80 Q65,88 80,80"
-          fill="none"
-          stroke="#555"
-          strokeWidth="0.4"
-          strokeDasharray="0.8,0.8"
-          opacity="0.2"
-        />
       </svg>
     </div>
   );
