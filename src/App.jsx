@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import PatientSimulator from './components/PatientSimulator';
 import ConversationLog from './components/ConversationLog';
+import ChatBotPage from './pages/ChatBotPage';
 import './App.css';
 
 function App() {
@@ -16,14 +18,12 @@ function App() {
   const handleAudioRecorded = (audioData) => {
     console.log('Audio recorded handler called with:', audioData);
     
-    // If it has a getAll function, this is the reference object to get all recordings
     if (audioData && typeof audioData.getAll === 'function') {
       console.log('Received audio getter function');
       audioRecordingsRef.current = audioData;
       return;
     }
     
-    // Otherwise, it's a new audio recording to add to the list
     if (audioData && audioData.blob) {
       console.log('Adding new audio recording, role:', audioData.role);
       setAudioRecordings(prev => [...prev, audioData]);
@@ -32,7 +32,6 @@ function App() {
 
   const startSimulation = () => {
     setIsSimulationActive(true);
-    // Reset recordings when starting a new simulation
     setAudioRecordings([]);
     audioRecordingsRef.current = null;
   };
@@ -41,22 +40,19 @@ function App() {
     setIsSimulationActive(false);
   };
 
-  // Get all audio recordings, either from the ref or the state
   const getAllAudioRecordings = () => {
     console.log('Getting all audio recordings');
     
-    // First try to get from the ref if available
     if (audioRecordingsRef.current && typeof audioRecordingsRef.current.getAll === 'function') {
       console.log('Getting recordings from ref');
       return audioRecordingsRef.current;
     }
     
-    // Otherwise return from state
     console.log('Getting recordings from state, count:', audioRecordings.length);
     return audioRecordings;
   };
 
-  return (
+  const SimulationPage = () => (
     <div className="app-container">
       <header>
         <h1>大腸內窺鏡病人模擬系統</h1>
@@ -86,6 +82,22 @@ function App() {
         <p>© {new Date().getFullYear()} - School of Nursing, The Hong Kong Polytechnic University</p>
       </footer>
     </div>
+  );
+
+  return (
+    <Router>
+      <div className="app">
+        <nav className="main-nav">
+          <Link to="/" className="nav-link">Patient Simulation</Link>
+          <Link to="/chatbot" className="nav-link">AI Chat Assistant</Link>
+        </nav>
+
+        <Routes>
+          <Route path="/" element={<SimulationPage />} />
+          <Route path="/chatbot" element={<ChatBotPage />} />
+        </Routes>
+      </div>
+    </Router>
   );
 }
 
