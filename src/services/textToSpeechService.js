@@ -325,99 +325,134 @@ export const textToSpeechWithViseme = async (text) => {
   // Get API credentials
   const speechKey = import.meta.env.VITE_AZURE_SPEECH_KEY;
   const speechRegion = import.meta.env.VITE_AZURE_SPEECH_REGION;
-  const voiceName = import.meta.env.VITE_AZURE_SPEECH_VOICE_NAME || 'zh-HK-WanLungNeural'; // Default HK male voice
+  const voiceName = import.meta.env.VITE_AZURE_SPEECH_VOICE_NAME || 'zh-HK-WanLungNeural';
 
-  if (!speechKey || !speechRegion) {
-    console.error('Missing Azure Speech API credentials in .env');
-    throw new Error('Missing Speech API credentials');
+  // Enhanced validation
+  if (!speechKey) {
+    console.error('Missing Azure Speech API Key in .env');
+    throw new Error('Missing Speech API Key');
   }
+
+  if (!speechRegion) {
+    console.error('Missing Azure Speech Region in .env');
+    throw new Error('Missing Speech Region');
+  }
+
+  console.log('Azure Speech Configuration:');
+  console.log('- Key Length:', speechKey.length);
+  console.log('- Region:', speechRegion);
+  console.log('- Voice:', voiceName);
+  console.log('- Text Length:', text.length);
 
   // --- SDK Implementation ---
   return new Promise((resolve, reject) => {
-    const speechConfig = SpeechSDK.SpeechConfig.fromSubscription(speechKey, speechRegion);
-    // Request viseme output
-    speechConfig.speechSynthesisOutputFormat = SpeechSDK.SpeechSynthesisOutputFormat.Audio16Khz128KBitRateMonoMp3;
-    
-    // Use null audio config to get audio data in memory
-    const audioConfig = null; 
-    const synthesizer = new SpeechSDK.SpeechSynthesizer(speechConfig, audioConfig);
-
-    const visemeData = [];
-
-    // Subscribe to viseme events
-    synthesizer.visemeReceived = (s, e) => {
-      // console.log(`Viseme received: ID=${e.visemeId}, Offset=${e.audioOffset / 10000}ms`);
-      // The audioOffset is in 100-nanosecond ticks, convert to milliseconds
-      visemeData.push({
-        visemeId: e.visemeId,
-        audioOffset: Math.round(e.audioOffset / 10000) 
-      });
-    };
-
-    // Escape SSML-sensitive characters minimally for the SSML structure
-    // Full XML escaping might not be needed if text doesn't contain complex XML
-    const escapedText = text
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&apos;');
+    try {
+      const speechConfig = SpeechSDK.SpeechConfig.fromSubscription(speechKey, speechRegion);
       
-    const ssml = `<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xmlns:mstts="http://www.w3.org/2001/mstts" xml:lang="zh-HK">
-                    <voice name="${voiceName}">
-                      <mstts:viseme type="redlips_front"/> 
-                      <prosody pitch="-2%" rate="-10%">
-                        ${escapedText}
-                      </prosody>
-                    </voice>
-                  </speak>`;
+      // Configure speech synthesis
+      speechConfig.speechSynthesisOutputFormat = SpeechSDK.SpeechSynthesisOutputFormat.Audio16Khz128KBitRateMonoMp3;
+      speechConfig.speechSynthesisVoiceName = voiceName;
+      
+      // Use null audio config to get audio data in memory
+      const synthesizer = new SpeechSDK.SpeechSynthesizer(speechConfig, null);
 
-    synthesizer.speakSsmlAsync(
-      ssml,
-      result => {
-        synthesizer.close(); // Close synthesizer once done
+      const visemeData = [];
 
-        if (result.reason === SpeechSDK.ResultReason.SynthesizingAudioCompleted) {
-          console.log(`Synthesis finished for text [${text.slice(0,30)}...]. Visemes collected: ${visemeData.length}`);
-          const audioData = result.audioData; // ArrayBuffer
-          const audioBlob = new Blob([audioData], { type: 'audio/mp3' });
-          const audioUrl = URL.createObjectURL(audioBlob);
+      // Subscribe to viseme events
+      synthesizer.visemeReceived = (s, e) => {
+        console.log(`Viseme received: ID=${e.visemeId}, Offset=${e.audioOffset / 10000}ms`);
+        visemeData.push({
+          visemeId: e.visemeId,
+          audioOffset: Math.round(e.audioOffset / 10000)
+        });
+      };
 
-          // Sort viseme data just in case it arrives out of order (though unlikely)
-          visemeData.sort((a, b) => a.audioOffset - b.audioOffset);
+      // Subscribe to synthesis events for better debugging
+      synthesizer.synthesizing = (s, e) => {
+        console.log('Synthesis in progress:', e.result.reason);
+      };
 
-          // Add to cache
-          if (audioCache.size >= MAX_CACHE_SIZE) {
-            const oldestKey = audioCache.keys().next().value;
-            if (audioCache.get(oldestKey)?.url) {
-              URL.revokeObjectURL(audioCache.get(oldestKey).url);
+      // Escape SSML-sensitive characters
+      const escapedText = text
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&apos;');
+        
+      const ssml = `<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xmlns:mstts="http://www.w3.org/2001/mstts" xml:lang="zh-HK">
+                      <voice name="${voiceName}">
+                        <mstts:viseme type="redlips_front"/> 
+                        <prosody pitch="-2%" rate="-10%">
+                          ${escapedText}
+                        </prosody>
+                      </voice>
+                    </speak>`;
+
+      console.log('Starting speech synthesis with SSML:', ssml);
+
+      synthesizer.speakSsmlAsync(
+        ssml,
+        result => {
+          console.log('Speech synthesis result:', result.reason);
+          
+          synthesizer.close();
+          console.log('Synthesizer closed');
+
+          if (result.reason === SpeechSDK.ResultReason.SynthesizingAudioCompleted) {
+            console.log(`Synthesis finished for text [${text.slice(0,30)}...]. Visemes collected: ${visemeData.length}`);
+            
+            if (!result.audioData || result.audioData.byteLength === 0) {
+              console.error('No audio data received');
+              reject(new Error('No audio data received from synthesis'));
+              return;
             }
-            audioCache.delete(oldestKey);
-          }
-          audioCache.set(cacheKey, {
-            url: audioUrl,
-            visemeData: visemeData,
-            timestamp: Date.now()
-          });
 
-          resolve({
-            audioUrl,
-            visemeData,
-            text: text 
-          });
-        } else {
-          console.error(`Speech synthesis failed: ${result.errorDetails}`);
-          reject(new Error(`Speech synthesis failed: ${result.errorDetails}`));
+            console.log('Audio data size:', result.audioData.byteLength, 'bytes');
+            
+            const audioBlob = new Blob([result.audioData], { type: 'audio/mp3' });
+            const audioUrl = URL.createObjectURL(audioBlob);
+
+            // Sort viseme data
+            visemeData.sort((a, b) => a.audioOffset - b.audioOffset);
+
+            // Cache management
+            if (audioCache.size >= MAX_CACHE_SIZE) {
+              const oldestKey = audioCache.keys().next().value;
+              if (audioCache.get(oldestKey)?.url) {
+                URL.revokeObjectURL(audioCache.get(oldestKey).url);
+              }
+              audioCache.delete(oldestKey);
+            }
+
+            // Store in cache
+            audioCache.set(cacheKey, {
+              url: audioUrl,
+              visemeData: visemeData,
+              timestamp: Date.now()
+            });
+
+            resolve({
+              audioUrl,
+              visemeData,
+              text: text
+            });
+          } else {
+            console.error('Speech synthesis failed:', result.errorDetails);
+            reject(new Error(`Speech synthesis failed: ${result.errorDetails || 'Unknown error'}`));
+          }
+        },
+        error => {
+          console.error('Error during speech synthesis:', error);
+          synthesizer.close();
+          reject(error);
         }
-      },
-      err => {
-        console.error(`Error during speech synthesis: ${err}`);
-        synthesizer.close();
-        reject(err);
-      }
-    );
+      );
+    } catch (error) {
+      console.error('Error setting up speech synthesis:', error);
+      reject(error);
+    }
   });
-  // --- End SDK Implementation ---
 };
 
 // Utility function to split text into sentences (Keep if needed, otherwise remove)

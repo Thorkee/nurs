@@ -139,6 +139,9 @@ const VisemeFace = memo(({ visemeData, audioUrl, isPlaying, onPlayComplete }) =>
   const visemeDataRef = useRef(visemeData);
   const isPlayingRef = useRef(isPlaying);
   
+  // Add new ref for tracking audio load state
+  const audioLoadedRef = useRef(false);
+  
   // Update refs when state changes to avoid unnecessary rerenders
   useEffect(() => {
     currentVisemeRef.current = currentViseme;
@@ -564,12 +567,91 @@ const VisemeFace = memo(({ visemeData, audioUrl, isPlaying, onPlayComplete }) =>
     );
   };
   
+  // Enhanced audio handling
+  useEffect(() => {
+    if (!audioRef.current) return;
+
+    const audio = audioRef.current;
+
+    const handleCanPlay = () => {
+      console.log('Audio can play');
+      audioLoadedRef.current = true;
+      if (isPlaying) {
+        const playPromise = audio.play();
+        if (playPromise) {
+          playPromise.catch(error => {
+            console.error('Audio playback failed:', error);
+          });
+        }
+      }
+    };
+
+    const handleEnded = () => {
+      console.log('Audio playback ended');
+      if (onPlayComplete) {
+        onPlayComplete();
+      }
+    };
+
+    const handleError = (error) => {
+      console.error('Audio error:', error);
+      audioLoadedRef.current = false;
+      if (onPlayComplete) {
+        onPlayComplete();
+      }
+    };
+
+    // Add event listeners
+    audio.addEventListener('canplay', handleCanPlay);
+    audio.addEventListener('ended', handleEnded);
+    audio.addEventListener('error', handleError);
+
+    // Cleanup
+    return () => {
+      audio.removeEventListener('canplay', handleCanPlay);
+      audio.removeEventListener('ended', handleEnded);
+      audio.removeEventListener('error', handleError);
+    };
+  }, [onPlayComplete]);
+
+  // Handle play state changes
+  useEffect(() => {
+    if (!audioRef.current) return;
+
+    const audio = audioRef.current;
+
+    if (isPlaying) {
+      if (audioLoadedRef.current) {
+        const playPromise = audio.play();
+        if (playPromise) {
+          playPromise.catch(error => {
+            console.error('Audio playback failed:', error);
+          });
+        }
+      } else {
+        console.log('Audio not loaded yet, waiting for canplay event');
+      }
+    } else {
+      audio.pause();
+      audio.currentTime = 0;
+    }
+  }, [isPlaying]);
+
+  // Update audio source
+  useEffect(() => {
+    if (!audioRef.current) return;
+
+    audioLoadedRef.current = false;
+    audioRef.current.load();
+  }, [audioUrl]);
+
   return (
     <div className="viseme-face">
       {/* Audio element for playing speech */}
       <audio 
         ref={audioRef} 
         src={audioUrl || ''}
+        preload="auto"
         onEnded={onPlayComplete}
         style={{ display: 'none' }}
       />
