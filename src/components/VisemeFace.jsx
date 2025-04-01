@@ -1,55 +1,55 @@
-import React, { useEffect, useRef, useState, memo } from 'react';
+import React, { useEffect, useRef, useState, memo, useCallback } from 'react';
 
-// More expressive mouth positions for different visemes
+// Enhanced mouth positions for Hong Kong Cantonese and English pronunciation
 const mouthPositions = {
-  0: { // Silence
-    path: "M50,70 Q57,68 65,69 Q73,68 80,70",
-    innerPath: "M52,70 Q65,69.5 78,70",
+  0: { // Silence - neutral position for Hong Kong male
+    path: "M52,70 Q65,69 78,70",
+    innerPath: "M54,70 Q65,69.5 76,70",
     description: "Silence/Rest"
   },
-  1: { // æ, ə, ʌ
-    path: "M48,74 Q57,80 65,81 Q73,80 82,74",
-    innerPath: "M50,74 Q65,77 80,74",
+  1: { // æ, ə, ʌ - common in Hong Kong English
+    path: "M50,72 Q65,76 80,72",
+    innerPath: "M52,72 Q65,74 78,72",
     description: "Slight Open"
   },
-  2: { // ɑ - Open but less exaggerated
-    path: "M45,80 Q57,92 65,94 Q73,92 85,80",
-    innerPath: "M48,81 Q65,89 82,81",
+  2: { // ɑ - Open for Cantonese vowels
+    path: "M48,76 Q65,84 82,76",
+    innerPath: "M50,76 Q65,80 80,76",
     description: "Open"
   },
-  3: { // ɔ - Rounded open, more controlled
-    path: "M50,78 Q57,88 65,90 Q73,88 80,78",
-    innerPath: "M52,79 Q65,85 78,79",
+  3: { // ɔ - Rounded open for Cantonese
+    path: "M50,74 Q65,80 80,74",
+    innerPath: "M52,74 Q65,77 78,74",
     description: "Rounded Open"
   },
-  4: { // ɛ, ʊ - Mid open, more realistic
-    path: "M48,76 Q57,84 65,86 Q73,84 82,76",
-    innerPath: "M50,76 Q65,81 80,76",
+  4: { // ɛ, ʊ - Mid open for Cantonese
+    path: "M49,73 Q65,78 81,73",
+    innerPath: "M51,73 Q65,76 79,73",
     description: "Mid Open"
   },
-  5: { // ɝ - R-sound, slightly restrained
-    path: "M50,75 Q57,82 65,84 Q73,82 80,75",
-    innerPath: "M52,75 Q65,78 78,75",
+  5: { // ɝ - R-sound (less pronounced in HK accent)
+    path: "M51,71 Q65,74 79,71",
+    innerPath: "M53,71 Q65,73 77,71",
     description: "R-sound"
   },
-  6: { // j, i, ɪ - More subtle smile
-    path: "M45,68 Q57,72 65,73 Q73,72 85,68",
-    innerPath: "M47,69 Q65,71 83,69",
+  6: { // j, i, ɪ - Smile (more reserved)
+    path: "M48,69 Q65,71 82,69",
+    innerPath: "M50,69 Q65,70 80,69",
     description: "Smile"
   },
-  7: { // w, u - Asian pronunciation, less rounded
-    path: "M55,72 Q65,64 75,72",
-    innerPath: "M57,71 Q65,66 73,71",
+  7: { // w, u - Rounded (HK pronunciation)
+    path: "M54,70 Q65,66 76,70",
+    innerPath: "M56,70 Q65,67 74,70",
     description: "Rounded"
   },
-  8: { // o - Small rounded, adjusted for Asian pronunciation
-    path: "M53,72 Q65,67 77,72",
-    innerPath: "M55,71 Q65,68 75,71",
+  8: { // o - Small rounded (Cantonese)
+    path: "M53,71 Q65,68 77,71",
+    innerPath: "M55,71 Q65,69 75,71",
     description: "Small Rounded"
   },
-  9: { // aʊ - Wide open but less dramatic
-    path: "M45,80 Q57,91 65,92 Q73,91 85,80",
-    innerPath: "M48,80 Q65,88 82,80",
+  9: { // aʊ - Wide open (Cantonese diphthong)
+    path: "M47,75 Q65,82 83,75",
+    innerPath: "M49,75 Q65,79 81,75",
     description: "Wide Open"
   },
   10: { // ɔɪ - Complex round, more controlled
@@ -117,10 +117,15 @@ const mouthPositions = {
 // Use memo to prevent unnecessary re-renders
 const VisemeFace = memo(({ visemeData, audioUrl, isPlaying, onPlayComplete }) => {
   const [currentViseme, setCurrentViseme] = useState(0);
-  const [targetViseme, setTargetViseme] = useState(0); // New state for smooth transitions
-  const [visemeTransition, setVisemeTransition] = useState(1); // 0-1 transition progress
-  const [blinkState, setBlinkState] = useState(1); // 1 = fully open, 0 = closed
+  const [targetViseme, setTargetViseme] = useState(0);
+  const [visemeTransition, setVisemeTransition] = useState(1);
+  const [blinkState, setBlinkState] = useState(1);
   const [visemeIndex, setVisemeIndex] = useState(0);
+  const [expressionState, setExpressionState] = useState({
+    eyebrowRaise: 0,
+    mouthTension: 0,
+    cheekRaise: 0
+  });
   
   const audioRef = useRef(null);
   const animationRef = useRef(null);
@@ -160,48 +165,54 @@ const VisemeFace = memo(({ visemeData, audioUrl, isPlaying, onPlayComplete }) =>
     }
   }, [isPlaying, visemeData]);
   
-  // Add blinking effect using requestAnimationFrame for better performance
+  // Enhanced blinking with natural variations
   useEffect(() => {
     let rafId;
     let lastBlinkTime = 0;
+    let blinkProbability = 0.1; // Base probability
     
     const animateBlink = (timestamp) => {
-      const blinkInterval = 3000 + (Math.random() * 3000); // 3-6 seconds
+      const timeSinceLastBlink = timestamp - lastBlinkTime;
       
-      if (timestamp - lastBlinkTime > blinkInterval) {
-        lastBlinkTime = timestamp;
-        doBlink();
+      // Increase probability of blinking as time passes
+      if (timeSinceLastBlink > 2000) {
+        blinkProbability = Math.min(0.8, blinkProbability + 0.1);
+        
+        if (Math.random() < blinkProbability) {
+          lastBlinkTime = timestamp;
+          blinkProbability = 0.1; // Reset probability
+          doBlink();
+        }
       }
       
       rafId = requestAnimationFrame(animateBlink);
     };
     
     const doBlink = () => {
-      // Eye closing animation
       let closingProgress = 1;
+      const closingSpeed = 0.15 + Math.random() * 0.1; // Variable speed
       
       const closeEyes = () => {
-        closingProgress -= 0.1;
-        setBlinkState(closingProgress);
+        closingProgress -= closingSpeed;
+        setBlinkState(Math.max(0, closingProgress));
         
         if (closingProgress > 0) {
-          setTimeout(closeEyes, 10);
+          setTimeout(closeEyes, 16);
         } else {
-          // Eyes fully closed, pause briefly
-          setTimeout(openEyes, 40);
+          setTimeout(openEyes, 30 + Math.random() * 20); // Variable pause
         }
       };
       
-      // Eye opening animation
       const openEyes = () => {
         let openingProgress = 0;
+        const openingSpeed = 0.12 + Math.random() * 0.08;
         
         const animate = () => {
-          openingProgress += 0.1;
-          setBlinkState(openingProgress);
+          openingProgress += openingSpeed;
+          setBlinkState(Math.min(1, openingProgress));
           
           if (openingProgress < 1) {
-            setTimeout(animate, 10);
+            setTimeout(animate, 16);
           }
         };
         
@@ -211,80 +222,38 @@ const VisemeFace = memo(({ visemeData, audioUrl, isPlaying, onPlayComplete }) =>
       closeEyes();
     };
     
-    // Start animation loop
     rafId = requestAnimationFrame(animateBlink);
     
-    return () => {
-      cancelAnimationFrame(rafId);
-    };
+    return () => cancelAnimationFrame(rafId);
   }, []);
   
-  // Handle viseme animation
-  useEffect(() => {
-    if (!isPlaying || !visemeData || visemeData.length === 0) {
-      // Reset to neutral when not playing
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current);
-        animationRef.current = null;
-      }
-      
-      setTargetViseme(0);
-      transitionToViseme(0);
-      return;
-    }
-    
-    // Start animation
-    setVisemeIndex(0);
-    
-    // Play audio if URL is provided
-    if (audioUrl && audioRef.current) {
-      audioRef.current.currentTime = 0;
-      const playPromise = audioRef.current.play();
-      
-      if (playPromise !== undefined) {
-        playPromise.catch(err => {
-          console.error('Audio playback error:', err);
-        });
-      }
-    }
-    
-    // Start animation loop
-    const animate = () => {
-      animationRef.current = requestAnimationFrame(animateViseme);
-    };
-    
-    animate();
-    
-    return () => {
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current);
-      }
-    };
-  }, [isPlaying, visemeData, audioUrl]);
-  
-  // Process viseme animation
-  const animateViseme = () => {
+  // Enhanced viseme animation with natural micro-movements
+  const animateViseme = useCallback(() => {
     if (!isPlayingRef.current || !visemeDataRef.current || visemeDataRef.current.length === 0) {
       return;
     }
     
-    // Get current viseme based on index
     const currentIndex = visemeIndex;
     
     if (currentIndex >= visemeDataRef.current.length) {
-      // Animation finished
       if (onPlayComplete) {
         onPlayComplete();
       }
       return;
     }
     
-    // Set target viseme
     const visemeId = visemeDataRef.current[currentIndex].visemeId;
     setTargetViseme(visemeId);
+    
+    // Add subtle micro-movements
+    setExpressionState(prev => ({
+      eyebrowRaise: Math.random() * 0.2,
+      mouthTension: Math.random() * 0.15,
+      cheekRaise: Math.random() * 0.1
+    }));
+    
     transitionToViseme(visemeId);
     
-    // Schedule next viseme
     const currentTime = visemeDataRef.current[currentIndex].audioOffset;
     const nextIndex = currentIndex + 1;
     
@@ -295,51 +264,46 @@ const VisemeFace = memo(({ visemeData, audioUrl, isPlaying, onPlayComplete }) =>
       setTimeout(() => {
         setVisemeIndex(nextIndex);
         animationRef.current = requestAnimationFrame(animateViseme);
-      }, Math.max(16, timeToNextViseme)); // Ensure minimum 16ms (60fps)
+      }, Math.max(16, timeToNextViseme));
     }
-  };
+  }, [visemeIndex, onPlayComplete]);
   
-  // Transition between visemes with improved easing
-  const transitionToViseme = (visemeId) => {
+  // Improved transition with dynamic easing
+  const transitionToViseme = useCallback((visemeId) => {
     if (currentVisemeRef.current === visemeId) {
       return;
     }
     
-    // Clear any existing transition
     if (transitionTimerRef.current) {
       cancelAnimationFrame(transitionTimerRef.current);
     }
     
-    // Store target viseme for transition
     setTargetViseme(visemeId);
-    
-    // Reset transition progress
     setVisemeTransition(0);
     
-    // More controlled transition for older speaker - slightly slower, more deliberate
-    const transitionDuration = 80; // ms - slightly slower for more realistic movement of older person
+    const transitionDuration = 60 + Math.random() * 40; // Variable duration
     const startTime = performance.now();
     
     const updateTransition = () => {
       const elapsed = performance.now() - startTime;
       let progress = Math.min(1, elapsed / transitionDuration);
       
-      // Custom easing function - more controlled, less bouncy
-      // This creates a more mature, deliberate mouth movement
-      progress = progress < 0.5 ? 2 * progress * progress : -1 + (4 - 2 * progress) * progress;
+      // Custom easing function with natural acceleration/deceleration
+      progress = progress < 0.5 
+        ? 4 * progress * progress * progress 
+        : 1 - Math.pow(-2 * progress + 2, 3) / 2;
       
       if (progress < 1) {
         setVisemeTransition(progress);
         transitionTimerRef.current = requestAnimationFrame(updateTransition);
       } else {
-        // Transition complete
         setCurrentViseme(visemeId);
         setVisemeTransition(1);
       }
     };
     
     transitionTimerRef.current = requestAnimationFrame(updateTransition);
-  };
+  }, []);
   
   // Render mouth shape using current and target viseme
   const getMouthPath = () => {
@@ -606,11 +570,7 @@ const VisemeFace = memo(({ visemeData, audioUrl, isPlaying, onPlayComplete }) =>
       <audio 
         ref={audioRef} 
         src={audioUrl || ''}
-        onEnded={() => {
-          if (onPlayComplete) {
-            onPlayComplete();
-          }
-        }}
+        onEnded={onPlayComplete}
         style={{ display: 'none' }}
       />
       
@@ -647,26 +607,17 @@ const VisemeFace = memo(({ visemeData, audioUrl, isPlaying, onPlayComplete }) =>
         
         {/* Add hairline - short, receding with some gray */}
         <path
-          d="M25,40 Q45,20 65,15 Q85,20 105,40"
+          d="M25,42 Q45,25 65,22 Q85,25 105,42"
           fill="none"
-          stroke="#333"
+          stroke="#222"
           strokeWidth="3"
-          opacity="0.7"
-        />
-        <path
-          d="M25,40 Q45,20 65,15 Q85,20 105,40"
-          fill="none"
-          stroke="#888"
-          strokeWidth="2"
-          strokeDasharray="3,5"
-          opacity="0.5"
         />
         
         {/* Age-appropriate features for 58-year-old Asian male */}
         
         {/* Forehead lines */}
         <path
-          d="M40,30 Q65,25 90,30"
+          d="M40,32 Q65,28 90,32"
           fill="none"
           stroke="#BA9980"
           strokeWidth="0.8"
@@ -682,7 +633,7 @@ const VisemeFace = memo(({ visemeData, audioUrl, isPlaying, onPlayComplete }) =>
         
         {/* Age-appropriate cheeks - more angular for a man */}
         <path 
-          d="M30,65 Q40,80 45,90"
+          d="M30,65 Q45,85 50,90"
           fill="none"
           stroke="#BA9980"
           strokeWidth="0.9"
@@ -761,7 +712,7 @@ const VisemeFace = memo(({ visemeData, audioUrl, isPlaying, onPlayComplete }) =>
         
         {/* Asian male nose - broader, flatter bridge */}
         <path 
-          d="M65,50 L65,65" 
+          d="M60,50 Q65,52 70,50" 
           fill="none" 
           stroke="#333"
           strokeWidth="1.5"
@@ -788,7 +739,9 @@ const VisemeFace = memo(({ visemeData, audioUrl, isPlaying, onPlayComplete }) =>
         />
         
         {/* Mouth - More realistic Asian male lips */}
-        <g className="mouth">
+        <g className="mouth" style={{
+          transform: `translate(0, ${expressionState.mouthTension}px)`
+        }}>
           {/* Subtle creases around mouth for age */}
           <path
             d={`M48,78 Q54,85 60,88`}
@@ -808,9 +761,9 @@ const VisemeFace = memo(({ visemeData, audioUrl, isPlaying, onPlayComplete }) =>
           {/* Lip outline - thinner, more masculine */}
           <path
             d={getMouthPaths().outerPath}
-            fill="#C26D60" 
+            fill="#A85C50" 
             stroke="#444"
-            strokeWidth="1.2"
+            strokeWidth="1"
             strokeLinecap="round"
           />
           
