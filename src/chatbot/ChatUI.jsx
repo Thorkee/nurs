@@ -183,7 +183,7 @@ export default function ChatUI() {
       <header className="chat-header">
         <div className="chat-title">
           <AzureIcon />
-          <h1>Azure AI Assistant</h1>
+          <h1>Colonoscopy Patient Simulation for Nursing Students</h1>
         </div>
         <div className="chat-actions">
           <button
@@ -211,8 +211,8 @@ export default function ChatUI() {
       <div className="messages-container" ref={chatContainerRef}>
         {messages.length === 0 ? (
           <div className="empty-state">
-            <h2>How can I assist you today?</h2>
-            <p>Ask a question or request information to begin your conversation.</p>
+            <h2>Begin your patient interaction</h2>
+            <p>Type your questions or comments to start the conversation with Mr. Chan, a 58-year-old man preparing for a colonoscopy.</p>
           </div>
         ) : (
           messages.map((message, i) => (
@@ -223,7 +223,7 @@ export default function ChatUI() {
               }`}
             >
               <div className="message-header">
-                <span className="message-role">{message.role === 'user' ? 'You' : 'Assistant'}</span>
+                <span className="message-role">{message.role === 'user' ? 'Nurse' : 'Mr. Chan'}</span>
                 {message.timestamp && (
                   <span className="message-time">{formatTime(message.timestamp)}</span>
                 )}
@@ -245,7 +245,7 @@ export default function ChatUI() {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Type your message here..."
+            placeholder="Type your message to Mr. Chan..."
             rows={1}
             disabled={isLoading}
             className="chat-input"

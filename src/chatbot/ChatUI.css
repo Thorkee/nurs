@@ -20,16 +20,21 @@
   padding: 18px 28px;
   background-color: #f8f9fa;
   border-bottom: 1px solid #eaeaea;
+  flex-wrap: wrap;
+  gap: 12px;
 }
 
 .chat-title {
   display: flex;
   align-items: center;
   gap: 10px;
+  flex: 1;
+  min-width: 200px;
 }
 
 .chat-title svg {
   color: #0078D4;
+  flex-shrink: 0;
 }
 
 .chat-header h1 {
@@ -38,11 +43,15 @@
   color: #1a1a1a;
   margin: 0;
   letter-spacing: -0.02em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .chat-actions {
   display: flex;
   gap: 10px;
+  flex-shrink: 0;
 }
 
 .action-button {
@@ -302,7 +311,7 @@
   }
   
   .chat-header h1 {
-    font-size: 1.1rem;
+    font-size: 1rem;
   }
 
   .action-button span {
@@ -315,5 +324,16 @@
   
   .input-form {
     padding: 16px 20px 20px;
+  }
+}
+
+@media (max-width: 480px) {
+  .chat-header {
+    justify-content: center;
+    text-align: center;
+  }
+  
+  .chat-title {
+    justify-content: center;
   }
 } 
