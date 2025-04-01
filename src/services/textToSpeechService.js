@@ -547,108 +547,165 @@ async function processChunksWithViseme(text, speechKey, speechRegion, voiceName)
  */
 function generateManualVisemes(textLength, startOffset = 0) {
   const visemeData = [];
-  const avgDuration = 30; // Further decreased from 40 to 30ms for more frequent and noticeable updates
+  const avgDuration = 25; // Even faster transitions for more responsive animation
   
-  // Estimate number of visemes based on text length - increased for more animation points
-  const numVisemes = Math.max(50, Math.ceil(textLength * 2.5)); // Increased multiplier from 2.0 to 2.5
+  // Estimate number of visemes based on text length - increased multiplier for more detailed animation
+  const numVisemes = Math.max(60, Math.ceil(textLength * 3.0)); // Increased for more detailed animation
   
   console.log(`Generating ${numVisemes} visemes for text length ${textLength}`);
   
-  // Add initial neutral viseme
-  visemeData.push({
-    visemeId: 0,
-    audioOffset: startOffset
-  });
-  
-  // Add a dramatic first viseme for obvious opening
-  visemeData.push({
-    visemeId: 2, // Very open mouth
-    audioOffset: startOffset + avgDuration
-  });
-  
-  // Generate visemes with appropriate timing
-  // Start from 2 since we manually added the first two visemes
-  for (let i = 2; i < numVisemes; i++) {
-    // Use a pattern of visemes rather than completely random ones
-    // This creates more natural sequences of mouth movements
-    let visemeId;
+  // Speech patterns - these represent common viseme sequences in natural speech
+  // Each pattern is a sequence of visemes that often occur together
+  const speechPatterns = [
+    // Open-close patterns (very common in speech)
+    [2, 11, 4, 1, 0],
+    [9, 6, 3, 1, 0],
+    [3, 10, 7, 4, 1],
     
-    // Create realistic viseme sequences that mimic natural speech patterns
-    // Avoid staying on viseme 0 (neutral/closed) for too long
-    const prevVisemeId = visemeData[i-1]?.visemeId;
-    const prevPrevVisemeId = visemeData[i-2]?.visemeId;
+    // Common consonant-vowel patterns
+    [19, 2, 11, 7], // d/t sounds followed by open vowels
+    [21, 9, 4, 8],  // p/b/m followed by open to closed sequence
+    [17, 6, 10, 3], // th sound followed by smile and round
     
-    // Avoid repeating the same viseme more than twice in a row
-    // This ensures more visible animation
-    if (prevVisemeId === prevPrevVisemeId) {
-      // Force a change to a different viseme group
-      if (prevVisemeId >= 0 && prevVisemeId <= 5) {
-        // If previous was in the 0-5 range, choose from 6-11
-        visemeId = 6 + Math.floor(Math.random() * 6);
-      } else if (prevVisemeId >= 6 && prevVisemeId <= 11) {
-        // If previous was in the 6-11 range, choose from either 0-5 or 12-16
-        const group = Math.random() < 0.7 ? 0 : 12;
-        visemeId = group + Math.floor(Math.random() * 5);
-      } else {
-        // If previous was 12+, choose from 0-11
-        visemeId = Math.floor(Math.random() * 12);
-      }
-    } else if (prevVisemeId === 0) {
-      // If previous was neutral/closed, always open mouth with dramatic viseme
-      // Choose from the most visually distinct open mouth visemes
-      visemeId = [2, 3, 6, 9, 11][Math.floor(Math.random() * 5)];
-    } else if (i % 12 === 0) {
-      // Much less frequently return to neutral position (viseme 0) 
-      // Changed from every 10th to every 12th viseme
-      visemeId = 0;
-    } else {
-      // Normal viseme selection with weighted distribution
-      // More common visemes get higher probability
-      // Focusing on the most visually distinct mouth shapes
-      const dramaticVisemes = [2, 3, 6, 9, 11]; // Very distinct shapes
-      const commonVisemes = [1, 4, 7, 8, 10]; // Common but less dramatic
-      const lessCommonVisemes = [5, 12, 13, 14, 19]; // Less common
-      const rareVisemes = [15, 16, 17, 18, 20, 21]; // Rarely used
+    // Common closing patterns
+    [4, 2, 1, 0],
+    [11, 7, 1, 0],
+    [10, 8, 0],
+    
+    // Common opening patterns
+    [0, 11, 9],
+    [0, 2, 6],
+    [0, 3, 10]
+  ];
+  
+  // Add initial viseme sequence for opening mouth
+  // Creates a more natural beginning to speech
+  const openingSequence = [
+    {
+      visemeId: 0, // Start closed
+      audioOffset: startOffset
+    },
+    {
+      visemeId: 1, // Slight open
+      audioOffset: startOffset + avgDuration * 0.5
+    },
+    {
+      visemeId: 2, // Wide open
+      audioOffset: startOffset + avgDuration * 1.5
+    }
+  ];
+  
+  visemeData.push(...openingSequence);
+  
+  // Generate natural speech-like viseme sequences
+  let currentOffset = startOffset + avgDuration * 3; // Start after opening sequence
+  let i = openingSequence.length;
+  
+  while (i < numVisemes) {
+    // Sometimes use a predetermined pattern (65% of the time)
+    // This creates more natural sequences
+    if (Math.random() < 0.65) {
+      // Select a random pattern
+      const pattern = speechPatterns[Math.floor(Math.random() * speechPatterns.length)];
       
-      const random = Math.random();
-      if (random < 0.5) { // Increased dramatic visemes from ~30% to 50%
-        // 50% chance of highly dramatic viseme
-        visemeId = dramaticVisemes[Math.floor(Math.random() * dramaticVisemes.length)];
-      } else if (random < 0.75) { // 25% chance of common viseme
-        visemeId = commonVisemes[Math.floor(Math.random() * commonVisemes.length)];
-      } else if (random < 0.9) { // 15% chance of less common viseme
-        visemeId = lessCommonVisemes[Math.floor(Math.random() * lessCommonVisemes.length)];
-      } else { // 10% chance of rare viseme
-        visemeId = rareVisemes[Math.floor(Math.random() * rareVisemes.length)];
+      // Apply the pattern with slight variations in timing
+      for (let j = 0; j < pattern.length && i < numVisemes; j++, i++) {
+        // Vary timing slightly (±15% variation for natural rhythm)
+        const timingVariation = 1 + (Math.random() * 0.3 - 0.15);
+        currentOffset += avgDuration * timingVariation;
+        
+        visemeData.push({
+          visemeId: pattern[j],
+          audioOffset: Math.round(currentOffset)
+        });
       }
+    } else {
+      // Generate individual visemes with weighted probabilities
+      // Using a Markov-like approach where next viseme depends on previous
+      const prevVisemeId = visemeData[i-1]?.visemeId;
+      let visemeId;
+      
+      // Create natural transitions between viseme groups
+      if (prevVisemeId <= 5) {
+        // From neutral/slight open to more dramatic
+        const choices = [2, 3, 6, 9, 11, 4];
+        visemeId = choices[Math.floor(Math.random() * choices.length)];
+      } else if (prevVisemeId >= 6 && prevVisemeId <= 11) {
+        // From dramatic to either closure or consonants
+        const random = Math.random();
+        if (random < 0.4) {
+          // Move toward closure
+          visemeId = [4, 1, 5, 8, 10][Math.floor(Math.random() * 5)];
+        } else if (random < 0.8) {
+          // Move to consonants
+          visemeId = [15, 16, 17, 19, 21][Math.floor(Math.random() * 5)];
+        } else {
+          // Stay dramatic occasionally
+          visemeId = [2, 3, 6, 9, 11][Math.floor(Math.random() * 5)];
+        }
+      } else {
+        // From consonants to vowels
+        visemeId = [2, 3, 4, 6, 9, 11][Math.floor(Math.random() * 6)];
+      }
+      
+      // Avoid triple repetition of the same viseme
+      const prevPrevVisemeId = visemeData[i-2]?.visemeId;
+      if (visemeId === prevVisemeId && visemeId === prevPrevVisemeId) {
+        // Force a change - choose from opposite end of the viseme range
+        if (visemeId < 10) {
+          visemeId = 10 + Math.floor(Math.random() * 11);
+        } else {
+          visemeId = Math.floor(Math.random() * 10);
+        }
+      }
+      
+      // Natural variation in timing (±20% variation)
+      const timingVariation = 1 + (Math.random() * 0.4 - 0.2);
+      currentOffset += avgDuration * timingVariation;
+      
+      visemeData.push({
+        visemeId,
+        audioOffset: Math.round(currentOffset)
+      });
+      
+      i++;
     }
     
-    // Create animation timing with realistic gaps
-    const audioOffset = startOffset + (i * avgDuration);
-    
-    visemeData.push({
-      visemeId,
-      audioOffset
-    });
+    // Every so often, insert a brief neutral/closure position (natural speech pause)
+    if (Math.random() < 0.08 && i < numVisemes - 5) {
+      visemeData.push({
+        visemeId: 0,
+        audioOffset: Math.round(currentOffset + avgDuration)
+      });
+      
+      currentOffset += avgDuration * 1.2;
+      i++;
+    }
   }
   
-  // Make sure we're not ending with viseme 0 in case that was the last randomly chosen one
-  if (visemeData[visemeData.length - 1].visemeId === 0) {
-    // Replace with a more visible closing viseme
-    visemeData[visemeData.length - 1].visemeId = 9; // Wide open, very noticeable
+  // Ensure we have a natural closing sequence
+  // Replace the last few visemes with a closing pattern
+  const closingOffset = visemeData[visemeData.length - 1].audioOffset;
+  const closingSequence = [
+    {
+      visemeId: 4, // Medium open
+      audioOffset: closingOffset + avgDuration
+    },
+    {
+      visemeId: 1, // Slight open
+      audioOffset: closingOffset + avgDuration * 2
+    },
+    {
+      visemeId: 0, // Closed
+      audioOffset: closingOffset + avgDuration * 3
+    }
+  ];
+  
+  // Remove last 3 visemes (if we have them) and add the closing sequence
+  if (visemeData.length > 5) {
+    visemeData.splice(-3);
   }
-  
-  // Add a final wide viseme before closing
-  visemeData.push({
-    visemeId: 2, // Dramatic open
-    audioOffset: startOffset + (numVisemes * avgDuration)
-  });
-  
-  // Then add final neutral viseme 0 at the end
-  visemeData.push({
-    visemeId: 0, 
-    audioOffset: startOffset + (numVisemes * avgDuration) + avgDuration
-  });
+  visemeData.push(...closingSequence);
   
   // Log some statistics about the generated visemes
   const visemeCounts = {};
