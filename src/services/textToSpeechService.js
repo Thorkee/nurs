@@ -366,7 +366,9 @@ export const textToSpeechWithViseme = async (text) => {
     const ssml = `<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xmlns:mstts="http://www.w3.org/2001/mstts" xml:lang="zh-HK">
                     <voice name="${voiceName}">
                       <mstts:viseme type="redlips_front"/> 
-                      ${escapedText}
+                      <prosody pitch="-2%" rate="-10%">
+                        ${escapedText}
+                      </prosody>
                     </voice>
                   </speak>`;
 
