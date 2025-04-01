@@ -26,14 +26,6 @@ const NewChatIcon = () => (
   </svg>
 );
 
-const AzureIcon = () => (
-  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <path d="M13.5259 4L5.91431 18.2857L13.3116 17.7959L19.4286 4H13.5259Z" fill="#0078D4"/>
-    <path d="M11.2857 6.63265L6 16.2041L11.25 15.7959L15.2143 6.63265H11.2857Z" fill="#0078D4"/>
-    <path d="M5 19.4694L13.5 20L19.5 8.57143L13.5 19.4694H5Z" fill="#0078D4"/>
-  </svg>
-);
-
 export default function ChatUI() {
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState([]);
@@ -182,7 +174,11 @@ export default function ChatUI() {
     <div className="chat-container">
       <header className="chat-header">
         <div className="chat-title">
-          <AzureIcon />
+          <img 
+            src="https://www.polyu.edu.hk/sn/-/media/Department/SN/Setting/logo_sn.png?bc=ffffff&h=64&mw=350&rev=edf61887da6f46488cc268ed51391501&hash=CE8C44FBA6A013C48CE37E503A63E586" 
+            alt="School of Nursing Logo" 
+            className="school-logo"
+          />
           <h1>Colonoscopy Patient Simulation for Nursing Students</h1>
         </div>
         <div className="chat-actions">
