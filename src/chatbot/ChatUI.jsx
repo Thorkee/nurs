@@ -5,14 +5,14 @@ import './ChatUI.css';
 
 // Icons as SVG components
 const SendIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <line x1="22" y1="2" x2="11" y2="13"></line>
     <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
   </svg>
 );
 
 const DownloadIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+  <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
     <polyline points="7 10 12 15 17 10"></polyline>
     <line x1="12" y1="15" x2="12" y2="3"></line>
@@ -20,9 +20,17 @@ const DownloadIcon = () => (
 );
 
 const NewChatIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+  <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <line x1="12" y1="5" x2="12" y2="19"></line>
     <line x1="5" y1="12" x2="19" y2="12"></line>
+  </svg>
+);
+
+const AzureIcon = () => (
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M13.5259 4L5.91431 18.2857L13.3116 17.7959L19.4286 4H13.5259Z" fill="#0078D4"/>
+    <path d="M11.2857 6.63265L6 16.2041L11.25 15.7959L15.2143 6.63265H11.2857Z" fill="#0078D4"/>
+    <path d="M5 19.4694L13.5 20L19.5 8.57143L13.5 19.4694H5Z" fill="#0078D4"/>
   </svg>
 );
 
@@ -173,7 +181,10 @@ export default function ChatUI() {
   return (
     <div className="chat-container">
       <header className="chat-header">
-        <h1>Azure OpenAI Chat</h1>
+        <div className="chat-title">
+          <AzureIcon />
+          <h1>Azure AI Assistant</h1>
+        </div>
         <div className="chat-actions">
           <button
             className="action-button"
@@ -200,8 +211,8 @@ export default function ChatUI() {
       <div className="messages-container" ref={chatContainerRef}>
         {messages.length === 0 ? (
           <div className="empty-state">
-            <h2>Start a conversation</h2>
-            <p>Ask a question to begin chatting with the AI assistant.</p>
+            <h2>How can I assist you today?</h2>
+            <p>Ask a question or request information to begin your conversation.</p>
           </div>
         ) : (
           messages.map((message, i) => (
@@ -234,7 +245,7 @@ export default function ChatUI() {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Type your message..."
+            placeholder="Type your message here..."
             rows={1}
             disabled={isLoading}
             className="chat-input"
