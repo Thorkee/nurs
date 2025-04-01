@@ -33,22 +33,28 @@ const calculateSimilarity = (str1, str2) => {
  */
 export const generateResponse = async (userInput, conversationHistory, streamHandler = null) => {
   try {
-    // Check cache for similar questions if conversation history is not too long
-    if (conversationHistory.length < 10) {
-      // Find similar cached questions
-      for (const [cacheKey, cachedResponse] of responseCache.entries()) {
-        const [cachedInput, cachedHistoryLength] = cacheKey.split('|');
+    // Use a faster similarity check for frequently asked questions
+    const cacheKey = `${userInput.trim().toLowerCase().slice(0, 50)}|${conversationHistory.length}`;
+    
+    // Check exact cache match - faster than similarity calculation
+    const exactCacheMatch = responseCache.get(cacheKey);
+    if (exactCacheMatch && Date.now() - exactCacheMatch.timestamp < 30 * 60 * 1000) {
+      console.log('Using exact cache match for response');
+      return exactCacheMatch.text;
+    }
+    
+    // Very quick fuzzy matching for common questions - only check most recent questions
+    if (conversationHistory.length < 15) {
+      for (const [key, cachedResponse] of responseCache.entries()) {
+        // Only check cache entries from the last 10 minutes
+        if (Date.now() - cachedResponse.timestamp > 10 * 60 * 1000) continue;
         
-        // Check if the current history length is similar to the cached history length
-        if (Math.abs(conversationHistory.length - parseInt(cachedHistoryLength)) <= 2) {
-          // Calculate similarity between current input and cached input
-          const similarity = calculateSimilarity(userInput, cachedInput);
-          
-          // If similarity is above threshold (85%), return cached response
-          if (similarity > 0.85 && Date.now() - cachedResponse.timestamp < 30 * 60 * 1000) { // 30 minutes expiry
-            console.log('Using cached response for similar question:', similarity);
-            return cachedResponse.text;
-          }
+        const [cachedInput] = key.split('|');
+        // Quick prefix matching, good enough for most cases
+        if (userInput.trim().toLowerCase().startsWith(cachedInput.slice(0, 25)) || 
+            cachedInput.slice(0, 25).includes(userInput.trim().toLowerCase().slice(0, 25))) {
+          console.log('Using fuzzy cache match for response');
+          return cachedResponse.text;
         }
       }
     }
@@ -58,20 +64,16 @@ export const generateResponse = async (userInput, conversationHistory, streamHan
     const endpoint = import.meta.env.VITE_AZURE_OPENAI_ENDPOINT;
     const deploymentId = import.meta.env.VITE_AZURE_OPENAI_DEPLOYMENT_ID;
     const apiVersion = import.meta.env.VITE_AZURE_OPENAI_API_VERSION;
-
-    console.log('Azure OpenAI API Key available:', !!apiKey);
-    console.log('Azure OpenAI Endpoint:', endpoint);
-    console.log('Azure OpenAI Deployment ID:', deploymentId);
     
-    // Format conversation history for the API
-    // Only include the last 6 messages from history to keep context small and reduce payload size
+    // Format conversation history - only include recent messages for context
+    // Keep only 10 most recent messages to reduce context size
     const recentHistory = conversationHistory.slice(-10);
     const formattedHistory = recentHistory.map(entry => ({
       role: entry.role === 'nurse' ? 'user' : 'assistant',
       content: entry.text
     }));
 
-    // Prepare the system message with patient simulation instructions
+    // Prepare system message - same as before
     const systemMessage = {
       role: 'system',
       content: `# System Role
@@ -117,19 +119,33 @@ You are **Mr. Chan**, a **58-year-old man** preparing for a **colonoscopy**. You
 - **Always respond in Hong Kong-style Cantonese.** Use natural, everyday expressions and avoid overly technical or formal terms.`
     };
 
-    // Create the full message array with system message, conversation history, and current input
+    // Create message array - keep context smaller for faster responses
     const messages = [
       systemMessage,
       ...formattedHistory,
       { role: 'user', content: userInput }
     ];
 
-    // Using streaming API if a streamHandler is provided
-    if (streamHandler) {
-      return await streamResponse(endpoint, deploymentId, apiVersion, apiKey, messages, streamHandler);
+    // Use streaming API for real-time response by default
+    if (streamHandler || true) { // Always use streaming for better responsiveness
+      const response = await streamResponse(endpoint, deploymentId, apiVersion, apiKey, messages, streamHandler);
+      
+      // Cache the response for future similar questions
+      if (responseCache.size >= MAX_CACHE_SIZE) {
+        // Remove oldest entry
+        const oldestKey = responseCache.keys().next().value;
+        responseCache.delete(oldestKey);
+      }
+      
+      responseCache.set(cacheKey, {
+        text: response,
+        timestamp: Date.now()
+      });
+      
+      return response;
     }
 
-    // Make API request to Azure OpenAI in regular (non-streaming) mode
+    // This section is kept for compatibility but will generally not be used
     try {
       console.log('Sending request to Azure OpenAI...');
       const response = await axios.post(
@@ -144,24 +160,19 @@ You are **Mr. Chan**, a **58-year-old man** preparing for a **colonoscopy**. You
             'Content-Type': 'application/json',
             'api-key': apiKey,
           },
-          // Add timeout to prevent hanging requests
-          timeout: 20000, // 20 seconds
+          timeout: 15000, // Reduced timeout for faster error detection
         }
       );
 
       console.log('Successfully received response from Azure OpenAI');
-      // Extract the generated text
       const generatedText = response.data.choices[0].message.content;
       
-      // Cache the response for future similar questions
+      // Cache the response
       if (responseCache.size >= MAX_CACHE_SIZE) {
-        // Remove oldest entry if cache is full
         const oldestKey = responseCache.keys().next().value;
         responseCache.delete(oldestKey);
       }
       
-      // Create a cache key combining the user input and conversation history length
-      const cacheKey = `${userInput}|${conversationHistory.length}`;
       responseCache.set(cacheKey, {
         text: generatedText,
         timestamp: Date.now()
@@ -183,7 +194,7 @@ You are **Mr. Chan**, a **58-year-old man** preparing for a **colonoscopy**. You
 };
 
 /**
- * Stream a response from Azure OpenAI API
+ * Stream a response from Azure OpenAI API with faster processing
  * @param {string} endpoint - API endpoint
  * @param {string} deploymentId - Deployment ID
  * @param {string} apiVersion - API version
@@ -196,7 +207,7 @@ async function streamResponse(endpoint, deploymentId, apiVersion, apiKey, messag
   try {
     const url = `${endpoint}/openai/deployments/${deploymentId}/chat/completions?api-version=${apiVersion}`;
     
-    // Create request options for fetch API
+    // Create request options - optimized for faster first token
     const options = {
       method: 'POST',
       headers: {
@@ -206,22 +217,34 @@ async function streamResponse(endpoint, deploymentId, apiVersion, apiKey, messag
       body: JSON.stringify({
         messages,
         temperature: 0.7,
-        max_tokens: 500,
-        stream: true
+        max_tokens: 400, // Slightly reduced for faster responses
+        stream: true,
+        top_p: 0.95, // Add top_p for faster sampling
+        frequency_penalty: 0.0,
+        presence_penalty: 0.0
       })
     };
     
-    // Make fetch request
-    const response = await fetch(url, options);
+    // Make fetch request with AbortController for timeout control
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 12000); // 12-second timeout
+    
+    const response = await fetch(url, {
+      ...options,
+      signal: controller.signal
+    });
+    
+    clearTimeout(timeoutId);
     
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
     
-    // Get reader for streaming
+    // Process stream more efficiently
     const reader = response.body.getReader();
     const decoder = new TextDecoder();
     let fullText = '';
+    let buffer = '';
     
     // Process stream
     while (true) {
@@ -231,52 +254,43 @@ async function streamResponse(endpoint, deploymentId, apiVersion, apiKey, messag
         break;
       }
       
-      // Decode chunk
-      const chunk = decoder.decode(value);
+      // Decode chunk and add to buffer
+      buffer += decoder.decode(value, { stream: true });
       
-      // Process SSE format (data: {...}\n\n)
-      const lines = chunk.split('\n\n');
+      // Process complete messages in buffer
+      const lines = buffer.split('\n\n');
+      buffer = lines.pop() || ''; // Keep the last incomplete chunk
       
       for (const line of lines) {
-        if (line.startsWith('data: ') && line !== 'data: [DONE]') {
+        if (line.startsWith('data: ')) {
+          const jsonStr = line.replace('data: ', '');
+          
+          if (jsonStr === '[DONE]') {
+            continue;
+          }
+          
           try {
-            // Extract JSON
-            const jsonStr = line.replace('data: ', '');
             const json = JSON.parse(jsonStr);
             
-            // Extract content delta
             if (json.choices && json.choices[0].delta && json.choices[0].delta.content) {
               const content = json.choices[0].delta.content;
               fullText += content;
               
-              // Call stream handler with new content
+              // Call the stream handler with new content
               if (streamHandler) {
                 streamHandler(content, fullText);
               }
             }
           } catch (e) {
-            console.error('Error parsing streaming response:', e);
+            console.warn('Error parsing JSON from stream:', e);
           }
         }
       }
     }
     
-    // Cache the final response
-    if (responseCache.size >= MAX_CACHE_SIZE) {
-      const oldestKey = responseCache.keys().next().value;
-      responseCache.delete(oldestKey);
-    }
-    
-    // Create a cache key combining the first message and conversation history length
-    const cacheKey = `${messages[messages.length - 1].content}|${messages.length - 2}`; // Excluding system message
-    responseCache.set(cacheKey, {
-      text: fullText,
-      timestamp: Date.now()
-    });
-    
     return fullText;
   } catch (error) {
-    console.error('Error in streaming response:', error);
+    console.error('Error in stream response:', error);
     throw error;
   }
 } 

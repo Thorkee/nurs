@@ -125,48 +125,22 @@ const PatientSimulator = ({ isActive, onStart, onStop, onConversationUpdate, onA
       setConversationHistory(prev => [...prev, nurseEntry]);
       onConversationUpdate(nurseEntry);
       
-      // Clear previous audio to prevent it from playing
+      // Clear previous audio to prevent it from playing - do this immediately
       if (audioRef.current) {
-        // Stop any currently playing audio
         audioRef.current.pause();
         audioRef.current.src = '';
         
-        // If we have a current audio URL, revoke it to free up memory
-        if (currentAudioUrl) {
-          // We need to be careful not to revoke cached URLs
-          let isCachedUrl = false;
-          
-          // Safely check if URL is in cache
+        if (currentAudioUrl && !isCachedUrl(currentAudioUrl)) {
           try {
-            if (audioCache.current && typeof audioCache.current.get === 'function') {
-              // Directly check if the URL exists in the cache Map
-              // Iterate through all entries in the Map
-              for (const cacheEntry of audioCache.current.entries()) {
-                // Check if this cache entry has a URL matching currentAudioUrl
-                if (cacheEntry[1] && cacheEntry[1].url === currentAudioUrl) {
-                  isCachedUrl = true;
-                  break;
-                }
-              }
-            }
+            URL.revokeObjectURL(currentAudioUrl);
           } catch (e) {
-            console.warn('Error checking audio cache:', e);
-          }
-          
-          if (!isCachedUrl) {
-            try {
-              URL.revokeObjectURL(currentAudioUrl);
-            } catch (e) {
-              console.warn('Error revoking URL:', e);
-            }
+            console.warn('Error revoking URL:', e);
           }
         }
       }
       
-      // Reset the current audio URL to prevent playing old audio
+      // Reset audio and indicate thinking state
       setCurrentAudioUrl('');
-      
-      // Stop any currently playing viseme animation
       setIsVisemePlaying(false);
       
       // Start pre-animation to indicate the patient is thinking
@@ -183,17 +157,46 @@ const PatientSimulator = ({ isActive, onStart, onStop, onConversationUpdate, onA
         streamedText = fullText;
         // Update patient response in real-time as words come in
         setPatientResponse(fullText);
+        
+        // Start TTS processing early for the first sentence
+        if (!ttsStarted && fullText.length > 30 && (fullText.includes('。') || fullText.includes('！') || 
+            fullText.includes('？') || fullText.includes('.') || fullText.includes('!') || fullText.includes('?'))) {
+          ttsStarted = true;
+          const sentenceMatch = fullText.match(/^[^。！？.!?]+[。！？.!?]/);
+          if (sentenceMatch && sentenceMatch[0]) {
+            // Start processing the first sentence immediately
+            processingFirstSentence = true;
+            startFirstSentenceTTS(sentenceMatch[0]);
+          }
+        }
       };
       
+      // Flag to avoid starting TTS multiple times
+      let ttsStarted = false;
+      let processingFirstSentence = false;
+      
+      // Function to start TTS for first sentence
+      const startFirstSentenceTTS = async (sentence) => {
+        try {
+          // Only process if we're using viseme animation
+          if (useViseme) {
+            firstSentencePromise = textToSpeechWithViseme(sentence);
+          }
+        } catch (e) {
+          console.warn("Error pre-processing first sentence:", e);
+        }
+      };
+      
+      // Initialize promises
+      let firstSentencePromise = null;
+      
+      // Start warming up TTS with a parallel empty request to initialize connection
+      const warmupPromise = textToSpeech("我明白，請稍等一下。").catch(e => console.warn("Warmup error:", e));
+      
       // Start generating the response with streaming handler
-      // This will start sending tokens as they're generated
       const responsePromise = generateResponse(text, conversationHistory, streamHandler);
       
-      // In parallel, prepare for audio synthesis by preloading common sentence patterns
-      // This helps warm up the TTS service while waiting for the full response
-      const warmupPromise = textToSpeech("我明白，請稍等一下。"); // "I understand, please wait a moment."
-      
-      // Wait for the response promise to complete
+      // Wait for the response to complete
       const response = await responsePromise;
       setPatientResponse(response);
       
@@ -211,165 +214,166 @@ const PatientSimulator = ({ isActive, onStart, onStop, onConversationUpdate, onA
       }, 0);
       
       if (useViseme) {
-        // Use the viseme version of text-to-speech
         try {
-          // If the response is long (> 200 chars), start processing the first part right away
-          let initialAudioPromise;
-          let initialAudioResult;
-          if (response.length > 200) {
-            const firstSentenceMatch = response.match(/^[^。！？.!?]+[。！？.!?]/);
-            if (firstSentenceMatch && firstSentenceMatch[0]) {
-              const firstSentence = firstSentenceMatch[0];
-              // Start generating audio for first sentence while processing the full response
-              initialAudioPromise = textToSpeechWithViseme(firstSentence);
+          let result;
+          
+          // If we already started processing the first sentence, use that result and process the rest
+          if (processingFirstSentence && firstSentencePromise) {
+            // Wait for first sentence TTS to complete
+            const firstSentenceResult = await firstSentencePromise;
+            
+            // Play first sentence audio immediately while processing the rest
+            setVisemeData(firstSentenceResult.visemeData);
+            setCurrentAudioUrl(firstSentenceResult.audioUrl);
+            setIsVisemePlaying(true);
+            
+            // Process full response in the background if it's substantially different
+            if (response.length > firstSentenceResult.text?.length + 20) {
+              // Full response minus what was already processed
+              const remainingText = response.substring(firstSentenceResult.text?.length || 0);
+              if (remainingText.length > 10) {
+                result = await textToSpeechWithViseme(response);
+              } else {
+                result = firstSentenceResult;
+              }
+            } else {
+              result = firstSentenceResult;
             }
+          } else {
+            // Process the full response normally if we haven't started early TTS
+            result = await textToSpeechWithViseme(response);
+            setCurrentAudioUrl(result.audioUrl);
+            setVisemeData(result.visemeData);
+            setIsVisemePlaying(true);
           }
           
-          // Process the full response in parallel
-          const result = await textToSpeechWithViseme(response);
+          // Capture the response audio in the background
+          setTimeout(() => captureAudioForSaving(result.audioUrl), 0);
           
-          // Store the audio URL for the VisemeFace component
-          const audioUrl = result.audioUrl;
-          console.log("PatientSimulator: Received audio URL from TTS:", audioUrl);
-          
-          // Make sure previous audio is stopped before setting new audio
-          if (audioRef.current) {
-            audioRef.current.pause();
-            audioRef.current.src = '';
-          }
-          
-          // Set the current audio URL for the VisemeFace component
-          setCurrentAudioUrl(audioUrl);
-          
-          // First set the viseme data
-          setVisemeData(result.visemeData);
-          
-          // Set the viseme as playing
-          setIsVisemePlaying(true);
-          
-          // Capture the response audio for saving in the background
-          setTimeout(() => {
-            fetch(audioUrl)
-              .then(response => response.blob())
-              .then(audioBlob => {
-                // Store the audio with its metadata
-                const audioEntry = {
-                  role: 'patient',
-                  blob: audioBlob,
-                  timestamp: new Date().toISOString(),
-                  url: audioUrl  // Store the URL too
-                };
-                setConversationAudio(prev => [...prev, audioEntry]);
-                
-                if (onAudioRecorded) {
-                  onAudioRecorded(audioEntry);
-                }
-              })
-              .catch(blobError => {
-                console.error('Error capturing audio blob:', blobError);
-              });
-          }, 0);
         } catch (audioErr) {
           console.error('Text-to-speech with viseme error:', audioErr);
           setError(`音頻生成錯誤: ${audioErr.message}`);
           setIsVisemePlaying(false);
           
           // Fall back to regular text-to-speech
-          try {
-            const audioUrl = await textToSpeech(response);
-            
-            // Clear previous audio
-            if (audioRef.current) {
-              audioRef.current.pause();
-              audioRef.current.src = '';
-            }
-            
-            audioRef.current.src = audioUrl;
-            audioRef.current.play().catch(e => console.error(e));
-          } catch (e) {
-            console.error('Fallback speech synthesis failed:', e);
-            setError(`備用語音合成失敗: ${e.message}`);
-          }
+          fallbackToRegularTTS(response);
         }
       } else {
         // Regular text-to-speech without viseme
-        try {
-          const audioUrl = await textToSpeech(response);
-          
-          // Clear previous audio
-          if (audioRef.current) {
-            audioRef.current.pause();
-            audioRef.current.src = '';
-          }
-          
-          audioRef.current.src = audioUrl;
-          
-          // Capture the response audio for saving in the background
-          setTimeout(() => {
-            try {
-              console.log('Fetching audio blob from URL');
-              fetch(audioUrl)
-                .then(response => response.blob())
-                .then(audioBlob => {
-                  console.log('Audio blob created, size:', audioBlob.size);
-                  
-                  // Store the audio with its metadata
-                  const audioEntry = {
-                    role: 'patient',
-                    blob: audioBlob,
-                    timestamp: new Date().toISOString()
-                  };
-                  setConversationAudio(prev => [...prev, audioEntry]);
-                  
-                  // If audio recording tracking is enabled at App level
-                  if (onAudioRecorded) {
-                    console.log('Sending audio recording to parent');
-                    onAudioRecorded(audioEntry);
-                  }
-                })
-                .catch(blobError => {
-                  console.error('Error capturing audio blob:', blobError);
-                });
-            } catch (blobError) {
-              console.error('Error capturing audio blob:', blobError);
-              // Continue without saving the audio
-            }
-          }, 0);
-          
-          // Add event listeners for audio playback
-          audioRef.current.onerror = (e) => {
-            console.error('Audio playback error:', e);
-            setError('音頻播放失敗。請閱讀文本回應。');
-          };
-          
-          audioRef.current.onended = () => {
-            console.log('Audio playback finished successfully');
-          };
-          
-          const playPromise = audioRef.current.play();
-          if (playPromise !== undefined) {
-            playPromise.catch(err => {
-              console.error('Audio play error:', err);
-              // Try playing again after a short delay
-              setTimeout(() => {
-                audioRef.current.play().catch(e => {
-                  console.error('Retry audio play error:', e);
-                  setError('音頻播放失敗。請閱讀文本回應。');
-                });
-              }, 1000);
-            });
-          }
-        } catch (audioErr) {
-          console.error('Text-to-speech error:', audioErr);
-          setError(`音頻生成錯誤: ${audioErr.message}`);
-          // We can still continue with the text response
-        }
+        regularTextToSpeech(response);
       }
     } catch (err) {
       console.error('Response generation error:', err);
       setError(`處理響應時出錯: ${err.message}`);
     } finally {
       setIsProcessing(false);
+    }
+  };
+  
+  // Helper to check if a URL is in the audio cache
+  const isCachedUrl = (url) => {
+    let isCached = false;
+    try {
+      if (audioCache.current && typeof audioCache.current.get === 'function') {
+        for (const cacheEntry of audioCache.current.entries()) {
+          if (cacheEntry[1] && cacheEntry[1].url === url) {
+            isCached = true;
+            break;
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('Error checking audio cache:', e);
+    }
+    return isCached;
+  };
+  
+  // Helper for regular TTS fallback
+  const fallbackToRegularTTS = async (text) => {
+    try {
+      const audioUrl = await textToSpeech(text);
+      
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.src = '';
+      }
+      
+      audioRef.current.src = audioUrl;
+      audioRef.current.play().catch(e => console.error(e));
+      
+      // Capture audio in background
+      setTimeout(() => captureAudioForSaving(audioUrl), 0);
+    } catch (e) {
+      console.error('Fallback speech synthesis failed:', e);
+      setError(`備用語音合成失敗: ${e.message}`);
+    }
+  };
+  
+  // Helper for regular TTS
+  const regularTextToSpeech = async (text) => {
+    try {
+      const audioUrl = await textToSpeech(text);
+      
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.src = '';
+      }
+      
+      audioRef.current.src = audioUrl;
+      
+      // Add event listeners for audio playback
+      audioRef.current.onerror = (e) => {
+        console.error('Audio playback error:', e);
+        setError('音頻播放失敗。請閱讀文本回應。');
+      };
+      
+      audioRef.current.onended = () => {
+        console.log('Audio playback finished successfully');
+      };
+      
+      audioRef.current.play().catch(err => {
+        console.error('Audio play error:', err);
+        // Try playing again after a short delay
+        setTimeout(() => {
+          audioRef.current.play().catch(e => {
+            console.error('Retry audio play error:', e);
+            setError('音頻播放失敗。請閱讀文本回應。');
+          });
+        }, 500); // Reduced delay to 500ms for faster retry
+      });
+      
+      // Capture audio in background
+      setTimeout(() => captureAudioForSaving(audioUrl), 0);
+    } catch (audioErr) {
+      console.error('Text-to-speech error:', audioErr);
+      setError(`音頻生成錯誤: ${audioErr.message}`);
+    }
+  };
+  
+  // Helper to capture audio for saving
+  const captureAudioForSaving = (audioUrl) => {
+    try {
+      fetch(audioUrl)
+        .then(response => response.blob())
+        .then(audioBlob => {
+          // Store the audio with its metadata
+          const audioEntry = {
+            role: 'patient',
+            blob: audioBlob,
+            timestamp: new Date().toISOString(),
+            url: audioUrl
+          };
+          setConversationAudio(prev => [...prev, audioEntry]);
+          
+          if (onAudioRecorded) {
+            onAudioRecorded(audioEntry);
+          }
+        })
+        .catch(blobError => {
+          console.error('Error capturing audio blob:', blobError);
+        });
+    } catch (error) {
+      console.error('Error in captureAudioForSaving:', error);
     }
   };
 

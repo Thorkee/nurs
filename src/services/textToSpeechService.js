@@ -307,7 +307,7 @@ function splitIntoSentences(text) {
  * This creates audio and returns both the audio URL and viseme data for facial animation
  * 
  * @param {string} text - The text to convert to speech
- * @returns {Promise<{audioUrl: string, visemeData: Array}>} - URL to the audio blob and viseme data
+ * @returns {Promise<{audioUrl: string, visemeData: Array, text: string}>} - URL to the audio blob, viseme data, and the original text
  */
 export const textToSpeechWithViseme = async (text) => {
   try {
@@ -321,7 +321,8 @@ export const textToSpeechWithViseme = async (text) => {
       console.log('Using cached audio and viseme data');
       return {
         audioUrl: cachedResult.url,
-        visemeData: cachedResult.visemeData
+        visemeData: cachedResult.visemeData,
+        text: text // Include the original text
       };
     }
     
@@ -333,8 +334,6 @@ export const textToSpeechWithViseme = async (text) => {
     if (!speechKey || !speechRegion) {
       throw new Error('Missing Speech API credentials');
     }
-
-    console.log("Creating speech synthesizer with key and region:", speechRegion);
 
     // For long text, process in smaller chunks but with viseme data
     if (text.length > 200) {
@@ -349,9 +348,15 @@ export const textToSpeechWithViseme = async (text) => {
       .replace(/"/g, '&quot;')
       .replace(/'/g, '&apos;');
     
-    // Use only one approach to generate audio to prevent duplicate sounds
-    console.log("Using REST API for audio synthesis...");
-    const response = await axios({
+    // Generate visemes while waiting for audio response - do this in parallel
+    const visemePromise = new Promise(resolve => {
+      // Generate visemes immediately without waiting for audio
+      const visemes = generateManualVisemes(text.length);
+      resolve(visemes);
+    });
+    
+    // Use REST API for audio synthesis
+    const audioPromise = axios({
       method: 'post',
       url: `https://${speechRegion}.tts.speech.microsoft.com/cognitiveservices/v1`,
       headers: {
@@ -364,18 +369,15 @@ export const textToSpeechWithViseme = async (text) => {
         <voice name="${voiceName}">${escapedText}</voice>
       </speak>`,
       responseType: 'arraybuffer',
-      timeout: 10000 // 10 second timeout
+      timeout: 8000 // Reduced timeout for faster response
     });
     
+    // Wait for both promises to complete
+    const [audioResponse, visemeData] = await Promise.all([audioPromise, visemePromise]);
+    
     // Create audio blob from response
-    const audioBlob = new Blob([response.data], { type: 'audio/mp3' });
+    const audioBlob = new Blob([audioResponse.data], { type: 'audio/mp3' });
     const audioUrl = URL.createObjectURL(audioBlob);
-    
-    console.log("Successfully generated audio using REST API");
-    
-    // Generate visemes for animation
-    const visemeData = generateManualVisemes(text.length);
-    console.log(`Generated ${visemeData.length} manual visemes for animation`);
     
     // Cache the result with viseme data
     if (audioCache.size >= MAX_CACHE_SIZE) {
@@ -394,7 +396,8 @@ export const textToSpeechWithViseme = async (text) => {
     
     return {
       audioUrl,
-      visemeData
+      visemeData,
+      text: text // Include the original text
     };
   } catch (error) {
     console.error("Error in text-to-speech with viseme:", error);
@@ -408,19 +411,37 @@ export const textToSpeechWithViseme = async (text) => {
  * @param {string} speechKey - API key
  * @param {string} speechRegion - API region
  * @param {string} voiceName - Voice name
- * @returns {Promise<{audioUrl: string, visemeData: Array}>} - Audio URL and viseme data
+ * @returns {Promise<{audioUrl: string, visemeData: Array, text: string}>} - Audio URL and viseme data
  */
 async function processChunksWithViseme(text, speechKey, speechRegion, voiceName) {
-  // Split text into sentences
+  // Check for exact cache match for long text too
+  const cacheKey = `viseme-long-${text.slice(0, 150)}`;
+  const cachedResult = audioCache.get(cacheKey);
+  
+  if (cachedResult && 
+      cachedResult.visemeData && 
+      Date.now() - cachedResult.timestamp < 30 * 60 * 1000) {
+    console.log('Using cached long text audio and viseme data');
+    return {
+      audioUrl: cachedResult.url,
+      visemeData: cachedResult.visemeData,
+      text: text
+    };
+  }
+
+  // Split text into sentences and create smaller chunks
   const sentences = splitIntoSentences(text);
   
-  // Create chunks of 2-3 sentences
+  // Faster chunking: create balanced chunks, or larger chunks for simpler processing
+  // Use a smaller number of larger chunks to reduce API calls
+  const maxChunkLength = 250; // Increased from 150
   const chunks = [];
   let currentChunk = [];
   let currentChunkLength = 0;
   
   for (const sentence of sentences) {
-    if (currentChunkLength + sentence.length > 150 || currentChunk.length >= 2) {
+    // If adding this sentence exceeds our limit, create a new chunk
+    if (currentChunkLength + sentence.length > maxChunkLength) {
       if (currentChunk.length > 0) {
         chunks.push(currentChunk.join(''));
         currentChunk = [];
@@ -439,66 +460,64 @@ async function processChunksWithViseme(text, speechKey, speechRegion, voiceName)
   
   console.log(`Processing ${chunks.length} chunks with viseme data`);
   
-  // Process each chunk
-  const results = await Promise.all(chunks.map(async (chunk, index) => {
-    try {
-      // Escape special XML characters
-      const escapedChunk = chunk
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&apos;');
-      
-      // Generate audio for this chunk
-      const response = await axios({
-        method: 'post',
-        url: `https://${speechRegion}.tts.speech.microsoft.com/cognitiveservices/v1`,
-        headers: {
-          'Ocp-Apim-Subscription-Key': speechKey,
-          'Content-Type': 'application/ssml+xml',
-          'X-Microsoft-OutputFormat': 'audio-16khz-128kbitrate-mono-mp3',
-          'User-Agent': 'patient-simulation-hk'
-        },
-        data: `<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xml:lang="zh-HK">
-          <voice name="${voiceName}">${escapedChunk}</voice>
-        </speak>`,
-        responseType: 'arraybuffer',
-        timeout: 8000
-      });
-      
-      // Generate viseme data for this chunk
-      // Calculate offset based on previous chunks
-      const startOffset = index * 5000; // Assume 5 seconds per chunk
-      const chunkVisemes = generateManualVisemes(chunk.length, startOffset);
-      
-      return {
-        audioBlob: new Blob([response.data], { type: 'audio/mp3' }),
-        visemeData: chunkVisemes
-      };
-    } catch (error) {
-      console.error(`Error processing chunk ${index}:`, error);
-      return {
-        audioBlob: null,
-        visemeData: []
-      };
-    }
-  }));
+  // Generate visemes for the entire text immediately
+  const fullVisemeData = generateManualVisemes(text.length);
   
-  // Combine audio blobs
-  const audioBlobs = results.map(r => r.audioBlob).filter(Boolean);
+  // Process chunks with a concurrency limit to avoid overwhelming the API
+  const concurrencyLimit = 3; // Process 3 chunks at a time
+  const audioBlobs = [];
+  
+  for (let i = 0; i < chunks.length; i += concurrencyLimit) {
+    const batch = chunks.slice(i, i + concurrencyLimit);
+    
+    // Process this batch of chunks in parallel
+    const batchResults = await Promise.all(batch.map(async (chunk) => {
+      try {
+        // Escape special XML characters
+        const escapedChunk = chunk
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&apos;');
+        
+        // Generate audio for this chunk
+        const response = await axios({
+          method: 'post',
+          url: `https://${speechRegion}.tts.speech.microsoft.com/cognitiveservices/v1`,
+          headers: {
+            'Ocp-Apim-Subscription-Key': speechKey,
+            'Content-Type': 'application/ssml+xml',
+            'X-Microsoft-OutputFormat': 'audio-16khz-128kbitrate-mono-mp3',
+            'User-Agent': 'patient-simulation-hk'
+          },
+          data: `<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xml:lang="zh-HK">
+            <voice name="${voiceName}">${escapedChunk}</voice>
+          </speak>`,
+          responseType: 'arraybuffer',
+          timeout: 8000
+        });
+        
+        return new Blob([response.data], { type: 'audio/mp3' });
+      } catch (error) {
+        console.error(`Error processing chunk:`, error);
+        return null;
+      }
+    }));
+    
+    // Add valid blobs to our collection
+    audioBlobs.push(...batchResults.filter(Boolean));
+  }
+  
   if (audioBlobs.length === 0) {
     throw new Error('Failed to generate any audio chunks');
   }
   
+  // Combine audio blobs
   const combinedAudioBlob = new Blob(audioBlobs, { type: 'audio/mp3' });
   const audioUrl = URL.createObjectURL(combinedAudioBlob);
   
-  // Combine viseme data
-  const combinedVisemeData = results.flatMap(r => r.visemeData);
-  
   // Cache the combined result
-  const cacheKey = `viseme-${text.slice(0, 100)}`;
   if (audioCache.size >= MAX_CACHE_SIZE) {
     const oldestKey = audioCache.keys().next().value;
     if (audioCache.get(oldestKey).url) {
@@ -509,13 +528,14 @@ async function processChunksWithViseme(text, speechKey, speechRegion, voiceName)
   
   audioCache.set(cacheKey, {
     url: audioUrl,
-    visemeData: combinedVisemeData,
+    visemeData: fullVisemeData,
     timestamp: Date.now()
   });
   
   return {
     audioUrl,
-    visemeData: combinedVisemeData
+    visemeData: fullVisemeData,
+    text: text
   };
 }
 
