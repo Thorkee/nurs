@@ -48,6 +48,100 @@ body {
   flex-direction: column;
 }
 
+/* New styles for fullscreen face view */
+.avatar-only-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  height: calc(100vh - 70px); /* Subtract header height */
+  background-color: #f9fafb;
+}
+
+.fullscreen-avatar {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.viseme-animation-container.fullscreen-face {
+  width: 80vh;
+  height: 80vh;
+  max-width: 800px;
+  max-height: 800px;
+}
+
+/* Floating conversation container in fullscreen mode */
+.fullscreen-conversation-container {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 90%;
+  max-width: 600px;
+  background-color: rgba(255, 255, 255, 0.9);
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  z-index: 10000;
+  padding: 15px;
+  backdrop-filter: blur(8px);
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.fullscreen-controls {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 5px;
+}
+
+.latest-message {
+  padding: 12px;
+  border-radius: 12px;
+  background-color: #f0f4f8;
+  max-height: 120px;
+  overflow-y: auto;
+}
+
+.nurse-message, .patient-message {
+  line-height: 1.5;
+}
+
+.nurse-message {
+  color: #1a73e8;
+}
+
+.patient-message {
+  color: #34a853;
+}
+
+.fullscreen-error {
+  position: fixed;
+  top: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 90%;
+  max-width: 500px;
+  z-index: 10001;
+}
+
+@media (max-width: 768px) {
+  .viseme-animation-container.fullscreen-face {
+    width: 90vw;
+    height: 90vw;
+  }
+  
+  .fullscreen-conversation-container {
+    bottom: 10px;
+    width: 95%;
+  }
+}
+
 .patient-simulator.fullscreen .panel-header {
   padding: 1.5rem 2rem;
   color: var(--text-color);

@@ -652,47 +652,73 @@ const PatientSimulator = ({ isActive, onStart, onStop, onConversationUpdate, onA
         {/* Include the two-column layout inside the nurse control panel when in fullscreen mode */}
         {isFullscreen && isActive && (
           <div className="fullscreen-content">
-            <div className="two-column-layout">
-              {/* Left column - Clinical scenario information */}
-              <div className="clinical-scenario-column">
-                <div className="patient-info">
-                  <h4>臨床情景: 大腸內窺鏡準備</h4>
-                  <p>- 陳先生因最近大便習慣改變、偶爾便血和輕微腹部不適被轉介做大腸內窺鏡。</p>
-                  <p>- 他目前尚未得到診斷，這顯著增加了他的焦慮。</p>
-                  <p>- 他對大腸內窺鏡程序、準備工作、潛在不適和可能的嚴重結果感到擔憂。</p>
-                  <p>- 他感到焦慮、困惑、尷尬和緊張。</p>
-                  <p className="role-instruction"><strong>注意：</strong> 您是護士，陳先生是病人。您需要向陳先生提問，他會回答您的問題。</p>
+            <div className="avatar-only-container">
+              <div className="avatar-section fullscreen-avatar">
+                {/* Show only the avatar in fullscreen mode */}
+                <div className="viseme-animation-container fullscreen-face">
+                  <VisemeFace 
+                    visemeData={visemeData.length > 0 ? visemeData : []}
+                    audioUrl={currentAudioUrl}
+                    isPlaying={isVisemePlaying}
+                    onPlayComplete={handleVisemePlayComplete}
+                  />
                 </div>
               </div>
               
-              {/* Right column - Avatar */}
-              <div className="avatar-column">
-                <div className="avatar-section">
-                  {/* Always show the avatar whether there's a response or not */}
-                  <div className="viseme-animation-container">
-                    <VisemeFace 
-                      visemeData={visemeData.length > 0 ? visemeData : []}
-                      audioUrl={currentAudioUrl}
-                      isPlaying={isVisemePlaying}
-                      onPlayComplete={handleVisemePlayComplete}
-                    />
-                  </div>
-                </div>
-                
-                {/* Error message and debug tools */}
-                {error && <div className="error-message">{error}</div>}
-                
-                {error && error.includes('Failed to convert text to speech') && (
+              {/* Error message and debug tools */}
+              {error && <div className="error-message fullscreen-error">{error}</div>}
+              
+              {error && error.includes('Failed to convert text to speech') && (
+                <button 
+                  className="debug-btn"
+                  onClick={() => setShowSpeechTest(!showSpeechTest)}
+                >
+                  {showSpeechTest ? '隱藏語音測試' : '顯示語音測試工具'}
+                </button>
+              )}
+              
+              {showSpeechTest && <SpeechTest />}
+            </div>
+            
+            {/* Floating conversation container in fullscreen mode */}
+            <div className="fullscreen-conversation-container">
+              {/* Recording controls and patient response */}
+              <div className="control-buttons fullscreen-controls">
+                {isProcessing ? (
+                  <button className="stop-btn" disabled>處理中...</button>
+                ) : isRecording ? (
                   <button 
-                    className="debug-btn"
-                    onClick={() => setShowSpeechTest(!showSpeechTest)}
+                    className={`record-btn ${isRecording ? 'recording' : ''}`} 
+                    onClick={stopRecording}
+                    disabled={isProcessing}
                   >
-                    {showSpeechTest ? '隱藏語音測試' : '顯示語音測試工具'}
+                    停止錄音
+                  </button>
+                ) : (
+                  <button 
+                    className="record-btn" 
+                    onClick={startRecording}
+                    disabled={isProcessing}
+                  >
+                    開始錄音
                   </button>
                 )}
-                
-                {showSpeechTest && <SpeechTest />}
               </div>
+
+              {/* Show most recent message in floating container */}
+              {conversationHistory.length > 0 && (
+                <div className="latest-message">
+                  {conversationHistory[conversationHistory.length - 1].role === 'nurse' ? (
+                    <div className="nurse-message">
+                      <strong>護士:</strong> {conversationHistory[conversationHistory.length - 1].text}
+                    </div>
+                  ) : (
+                    <div className="patient-message">
+                      <strong>陳先生:</strong> {conversationHistory[conversationHistory.length - 1].text}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         )}
