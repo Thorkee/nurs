@@ -1,0 +1,22 @@
+[
+  {
+    "role": "user",
+    "text": "hihi",
+    "timestamp": 1744310799142
+  },
+  {
+    "role": "assistant",
+    "text": "你好啊！係咩事呀？",
+    "timestamp": 1744310799142
+  },
+  {
+    "role": "user",
+    "text": "how u doing",
+    "timestamp": 1744310809080
+  },
+  {
+    "role": "assistant",
+    "text": "唔係呀，我哋講下我嘅情況啦，我有啲緊張喎。",
+    "timestamp": 1744310809080
+  }
+]
