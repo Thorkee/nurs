@@ -1,0 +1,22 @@
+[
+  {
+    "role": "nurse",
+    "text": "Lets try it again again.",
+    "timestamp": "2025-04-10T18:50:52.353Z"
+  },
+  {
+    "role": "patient",
+    "text": "試咗幾次都仲係唔得？咁點算好呀？",
+    "timestamp": "2025-04-10T18:50:54.877Z"
+  },
+  {
+    "role": "nurse",
+    "text": "我係問你聽唔聽到我講嘢?",
+    "timestamp": "2025-04-10T18:51:05.513Z"
+  },
+  {
+    "role": "patient",
+    "text": "哦，聽到呀！可能頭先有啲雜音，我以為你講緊其他嘢。",
+    "timestamp": "2025-04-10T18:51:06.930Z"
+  }
+]
