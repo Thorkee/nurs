@@ -3,7 +3,11 @@ import * as SpeechSDK from 'microsoft-cognitiveservices-speech-sdk';
 
 // Cache for storing recently generated speech audio
 const audioCache = new Map();
-const MAX_CACHE_SIZE = 25;
+const MAX_CACHE_SIZE = 100;
+
+// Maximum chunk size for Azure TTS (characters)
+// Remove the chunking limit entirely - process full text in one request
+// const MAX_CHUNK_SIZE = 800; 
 
 /**
  * Expose the audio cache for reference checking
@@ -11,6 +15,8 @@ const MAX_CACHE_SIZE = 25;
  * @private - Not intended for direct manipulation
  */
 export const _getAudioCache = () => audioCache;
+
+// Remove the splitTextIntoChunks function since we're not chunking anymore
 
 /**
  * Converts text to speech using Azure Speech Studio API (REST API version)
@@ -20,7 +26,7 @@ export const _getAudioCache = () => audioCache;
 export const textToSpeech = async (text) => {
   try {
     // Check cache first
-    const cacheKey = `speech-${text.slice(0, 100)}`;
+    const cacheKey = `speech-${text}`;
     const cachedAudio = audioCache.get(cacheKey);
     
     if (cachedAudio && Date.now() - cachedAudio.timestamp < 30 * 60 * 1000) { // 30 min expiry
@@ -32,19 +38,6 @@ export const textToSpeech = async (text) => {
     const speechKey = import.meta.env.VITE_AZURE_SPEECH_KEY;
     const speechRegion = import.meta.env.VITE_AZURE_SPEECH_REGION;
     const voiceName = import.meta.env.VITE_AZURE_SPEECH_VOICE_NAME || 'zh-HK-WanLungNeural';
-
-    // Escape special XML characters to prevent SSML parsing errors
-    const escapedText = text
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&apos;');
-
-    console.log('Azure Speech Key length:', speechKey ? speechKey.length : 0);
-    console.log('Azure Speech Region:', speechRegion);
-    console.log('Voice Name:', voiceName);
-    console.log('Text length:', text.length, 'characters');
 
     // Check for common issues
     if (!speechKey) {
@@ -63,14 +56,14 @@ export const textToSpeech = async (text) => {
       console.warn(`Speech region "${speechRegion}" might not be valid. Azure regions are typically in format like "eastus2"`);
     }
     
-    // For very long text, process in chunks
-    if (text.length > 300) {
-      return processLongTextInChunks(text, speechKey, speechRegion, voiceName);
-    }
+    // Process entire text without chunking
+    const escapedText = text
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&apos;');
 
-    // Prepare SSML with enhanced error checking
-    console.log('Preparing SSML for Azure Speech Service');
-    
     // Keep SSML simple and compact
     const ssml = `<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xml:lang="zh-HK"><voice name="${voiceName}">${escapedText}</voice></speak>`;
 
@@ -91,7 +84,7 @@ export const textToSpeech = async (text) => {
         },
         data: ssml,
         responseType: 'arraybuffer',
-        timeout: 10000 // 10 second timeout
+        timeout: 120000 // Increased to 120 seconds for long texts
       });
 
       // Check if we got a valid audio response
@@ -174,135 +167,6 @@ export const textToSpeech = async (text) => {
 };
 
 /**
- * Process long text by breaking it into chunks and converting them in parallel
- * @param {string} text - The full text to convert
- * @param {string} speechKey - API key
- * @param {string} speechRegion - API region
- * @param {string} voiceName - Voice to use
- * @returns {Promise<string>} - URL to the concatenated audio blob
- */
-async function processLongTextInChunks(text, speechKey, speechRegion, voiceName) {
-  try {
-    // Split text into sentences
-    const sentences = splitIntoSentences(text);
-    console.log(`Processing ${sentences.length} sentences in parallel`);
-    
-    // Create chunks of sentences (3-5 sentences per chunk)
-    const chunks = [];
-    let currentChunk = [];
-    let currentChunkLength = 0;
-    
-    for (const sentence of sentences) {
-      if (currentChunkLength + sentence.length > 200 || currentChunk.length >= 3) {
-        if (currentChunk.length > 0) {
-          chunks.push(currentChunk.join(''));
-          currentChunk = [];
-          currentChunkLength = 0;
-        }
-      }
-      
-      currentChunk.push(sentence);
-      currentChunkLength += sentence.length;
-    }
-    
-    // Add any remaining sentences
-    if (currentChunk.length > 0) {
-      chunks.push(currentChunk.join(''));
-    }
-    
-    console.log(`Created ${chunks.length} chunks for parallel processing`);
-    
-    // Process each chunk in parallel
-    const requests = chunks.map(async (chunk) => {
-      const escapedChunk = chunk
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&apos;');
-      
-      const ssml = `<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xml:lang="zh-HK"><voice name="${voiceName}">${escapedChunk}</voice></speak>`;
-      
-      try {
-        const response = await axios({
-          method: 'post',
-          url: `https://${speechRegion}.tts.speech.microsoft.com/cognitiveservices/v1`,
-          headers: {
-            'Ocp-Apim-Subscription-Key': speechKey,
-            'Content-Type': 'application/ssml+xml',
-            'X-Microsoft-OutputFormat': 'audio-16khz-128kbitrate-mono-mp3',
-            'User-Agent': 'patient-simulation-hk'
-          },
-          data: ssml,
-          responseType: 'arraybuffer',
-          timeout: 8000 // 8 second timeout
-        });
-        
-        return new Blob([response.data], { type: 'audio/mp3' });
-      } catch (error) {
-        console.error(`Error processing chunk: ${error.message}`);
-        return null;
-      }
-    });
-    
-    // Wait for all requests to complete
-    const audioBlobs = await Promise.all(requests);
-    
-    // Filter out any failed requests
-    const validBlobs = audioBlobs.filter(blob => blob !== null);
-    
-    if (validBlobs.length === 0) {
-      throw new Error('Failed to process any chunks of text');
-    }
-    
-    console.log(`Successfully processed ${validBlobs.length} of ${chunks.length} chunks`);
-    
-    // Combine all audio blobs
-    const combinedBlob = new Blob(validBlobs, { type: 'audio/mp3' });
-    const audioUrl = URL.createObjectURL(combinedBlob);
-    
-    // Cache the combined result
-    const cacheKey = `speech-${text.slice(0, 100)}`;
-    if (audioCache.size >= MAX_CACHE_SIZE) {
-      const oldestKey = audioCache.keys().next().value;
-      URL.revokeObjectURL(audioCache.get(oldestKey).url);
-      audioCache.delete(oldestKey);
-    }
-    
-    audioCache.set(cacheKey, {
-      url: audioUrl,
-      timestamp: Date.now()
-    });
-    
-    return audioUrl;
-  } catch (error) {
-    console.error('Error processing text in chunks:', error);
-    throw error;
-  }
-}
-
-/**
- * Split text into sentences
- * @param {string} text - Text to split
- * @returns {Array<string>} - Array of sentences
- */
-function splitIntoSentences(text) {
-  // Split on common sentence-ending punctuation for Chinese and English
-  const sentenceRegex = /([.!?。！？]+\s*)/g;
-  const sentences = text.split(sentenceRegex).filter(Boolean);
-  
-  // Combine punctuation with its preceding sentence
-  const result = [];
-  for (let i = 0; i < sentences.length; i += 2) {
-    const sentence = sentences[i];
-    const punctuation = sentences[i + 1] || '';
-    result.push(sentence + punctuation);
-  }
-  
-  return result;
-}
-
-/**
  * Converts text to speech with viseme data using Azure Speech SDK
  * This creates audio and returns both the audio URL and viseme data for facial animation
  * 
@@ -310,8 +174,11 @@ function splitIntoSentences(text) {
  * @returns {Promise<{audioUrl: string, visemeData: Array, text: string}>} - URL to the audio blob, viseme data, and the original text
  */
 export const textToSpeechWithViseme = async (text) => {
+  // Log the input text length to debug truncation issues
+  console.log(`textToSpeechWithViseme called with text of length: ${text.length}`);
+  
   // Check cache first
-  const cacheKey = `viseme-sdk-${text.slice(0, 100)}`; // Use a different prefix for SDK results
+  const cacheKey = `viseme-sdk-${text}`;
   const cachedResult = audioCache.get(cacheKey);
   if (cachedResult && cachedResult.visemeData && Date.now() - cachedResult.timestamp < 30 * 60 * 1000) {
     console.log('Using cached SDK audio and viseme data');
@@ -346,7 +213,6 @@ export const textToSpeechWithViseme = async (text) => {
 
     // Subscribe to viseme events
     synthesizer.visemeReceived = (s, e) => {
-      // console.log(`Viseme received: ID=${e.visemeId}, Offset=${e.audioOffset / 10000}ms`);
       // The audioOffset is in 100-nanosecond ticks, convert to milliseconds
       visemeData.push({
         visemeId: e.visemeId,
@@ -355,7 +221,6 @@ export const textToSpeechWithViseme = async (text) => {
     };
 
     // Escape SSML-sensitive characters minimally for the SSML structure
-    // Full XML escaping might not be needed if text doesn't contain complex XML
     const escapedText = text
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')
@@ -372,6 +237,9 @@ export const textToSpeechWithViseme = async (text) => {
                     </voice>
                   </speak>`;
 
+    console.log('SSML length for viseme generation:', ssml.length, 'characters');
+    console.log('Text length after escaping:', escapedText.length, 'characters');
+    
     synthesizer.speakSsmlAsync(
       ssml,
       result => {
@@ -383,7 +251,7 @@ export const textToSpeechWithViseme = async (text) => {
           const audioBlob = new Blob([audioData], { type: 'audio/mp3' });
           const audioUrl = URL.createObjectURL(audioBlob);
 
-          // Sort viseme data just in case it arrives out of order (though unlikely)
+          // Sort viseme data just in case it arrives out of order
           visemeData.sort((a, b) => a.audioOffset - b.audioOffset);
 
           // Add to cache
@@ -419,12 +287,6 @@ export const textToSpeechWithViseme = async (text) => {
   });
   // --- End SDK Implementation ---
 };
-
-// Utility function to split text into sentences (Keep if needed, otherwise remove)
-// ... (keep existing splitIntoSentences if still used elsewhere, otherwise can be removed) ...
-
-// Export other functions if they exist
-// ...
 
 // Note: Ensure the SimpleLRUCache class and MAX_CACHE_SIZE are defined appropriately above.
 // The 'splitIntoSentences' function is likely no longer needed by textToSpeechWithViseme.

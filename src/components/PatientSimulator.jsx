@@ -147,7 +147,9 @@ const PatientSimulator = ({ isActive, onStart, onStop, onConversationUpdate, onA
       setVisemeData([
         { visemeId: 0, audioOffset: 0 },
         { visemeId: 2, audioOffset: 300 },
-        { visemeId: 0, audioOffset: 600 }
+        { visemeId: 0, audioOffset: 600 },
+        { visemeId: 1, audioOffset: 900 },
+        { visemeId: 0, audioOffset: 1200 }
       ]);
       setIsVisemePlaying(true);
       
@@ -157,38 +159,21 @@ const PatientSimulator = ({ isActive, onStart, onStop, onConversationUpdate, onA
         streamedText = fullText;
         // Update patient response in real-time as words come in
         setPatientResponse(fullText);
-        
-        // Start TTS processing early for the first sentence
-        if (!ttsStarted && fullText.length > 30 && (fullText.includes('。') || fullText.includes('！') || 
-            fullText.includes('？') || fullText.includes('.') || fullText.includes('!') || fullText.includes('?'))) {
-          ttsStarted = true;
-          const sentenceMatch = fullText.match(/^[^。！？.!?]+[。！？.!?]/);
-          if (sentenceMatch && sentenceMatch[0]) {
-            // Start processing the first sentence immediately
-            processingFirstSentence = true;
-            startFirstSentenceTTS(sentenceMatch[0]);
-          }
-        }
       };
       
       // Flag to avoid starting TTS multiple times
       let ttsStarted = false;
-      let processingFirstSentence = false;
+      let firstSentencePromise = null;
       
-      // Function to start TTS for first sentence
+      // Function to start TTS - simplified to just log the request
       const startFirstSentenceTTS = async (sentence) => {
         try {
-          // Only process if we're using viseme animation
-          if (useViseme) {
-            firstSentencePromise = textToSpeechWithViseme(sentence);
-          }
+          console.log("Pre-processing text for TTS:", sentence.length, "characters");
+          // We're not going to use this anymore
         } catch (e) {
-          console.warn("Error pre-processing first sentence:", e);
+          console.warn("Error pre-processing text:", e);
         }
       };
-      
-      // Initialize promises
-      let firstSentencePromise = null;
       
       // Start warming up TTS with a parallel empty request to initialize connection
       const warmupPromise = textToSpeech("我明白，請稍等一下。").catch(e => console.warn("Warmup error:", e));
@@ -215,41 +200,48 @@ const PatientSimulator = ({ isActive, onStart, onStop, onConversationUpdate, onA
       
       if (useViseme) {
         try {
-          let result;
+          // Process the complete response only, no more partial processing
+          console.log("Processing complete response at once, length:", response.length);
           
-          // If we already started processing the first sentence, use that result and process the rest
-          if (processingFirstSentence && firstSentencePromise) {
-            // Wait for first sentence TTS to complete
-            const firstSentenceResult = await firstSentencePromise;
+          // Make sure viseme is not playing before starting a new one
+          setIsVisemePlaying(false);
+          
+          // Add a small delay to ensure any previous animation is fully stopped
+          await new Promise(resolve => setTimeout(resolve, 100));
+          
+          const result = await textToSpeechWithViseme(response);
+          
+          // Ensure all viseme data is properly received
+          if (result.visemeData && result.visemeData.length > 0) {
+            console.log(`Received ${result.visemeData.length} viseme entries`);
             
-            // Play first sentence audio immediately while processing the rest
-            setVisemeData(firstSentenceResult.visemeData);
-            setCurrentAudioUrl(firstSentenceResult.audioUrl);
-            setIsVisemePlaying(true);
+            // Make sure the viseme data has appropriate end padding to ensure all animations complete
+            const lastVisemeTime = result.visemeData[result.visemeData.length - 1].audioOffset;
+            const paddedVisemeData = [...result.visemeData];
             
-            // Process full response in the background if it's substantially different
-            if (response.length > firstSentenceResult.text?.length + 20) {
-              // Full response minus what was already processed
-              const remainingText = response.substring(firstSentenceResult.text?.length || 0);
-              if (remainingText.length > 10) {
-                result = await textToSpeechWithViseme(response);
-              } else {
-                result = firstSentenceResult;
-              }
-            } else {
-              result = firstSentenceResult;
-            }
+            // Add an explicit closing viseme with extra time offset
+            paddedVisemeData.push({
+              visemeId: 0,  // neutral mouth position
+              audioOffset: lastVisemeTime + 500
+            });
+            
+            setVisemeData(paddedVisemeData);
           } else {
-            // Process the full response normally if we haven't started early TTS
-            result = await textToSpeechWithViseme(response);
-            setCurrentAudioUrl(result.audioUrl);
-            setVisemeData(result.visemeData);
-            setIsVisemePlaying(true);
+            console.warn("Warning: No viseme data received or empty array");
+            setVisemeData([
+              { visemeId: 0, audioOffset: 0 }, 
+              { visemeId: 1, audioOffset: 500 },
+              { visemeId: 0, audioOffset: 1000 }
+            ]);
           }
           
-          // Capture the response audio in the background
-          setTimeout(() => captureAudioForSaving(result.audioUrl), 0);
+          setCurrentAudioUrl(result.audioUrl);
+          setIsVisemePlaying(true);
           
+          // Capture the response audio in the background
+          captureAudioForSaving(result.audioUrl).catch(e => 
+            console.error('Error capturing viseme audio for saving:', e)
+          );
         } catch (audioErr) {
           console.error('Text-to-speech with viseme error:', audioErr);
           setError(`音頻生成錯誤: ${audioErr.message}`);
@@ -302,7 +294,9 @@ const PatientSimulator = ({ isActive, onStart, onStop, onConversationUpdate, onA
       audioRef.current.play().catch(e => console.error(e));
       
       // Capture audio in background
-      setTimeout(() => captureAudioForSaving(audioUrl), 0);
+      captureAudioForSaving(audioUrl).catch(e => 
+        console.error('Error capturing audio for saving:', e)
+      );
     } catch (e) {
       console.error('Fallback speech synthesis failed:', e);
       setError(`備用語音合成失敗: ${e.message}`);
@@ -343,7 +337,9 @@ const PatientSimulator = ({ isActive, onStart, onStop, onConversationUpdate, onA
       });
       
       // Capture audio in background
-      setTimeout(() => captureAudioForSaving(audioUrl), 0);
+      captureAudioForSaving(audioUrl).catch(e => 
+        console.error('Error capturing audio for saving:', e)
+      );
     } catch (audioErr) {
       console.error('Text-to-speech error:', audioErr);
       setError(`音頻生成錯誤: ${audioErr.message}`);
@@ -351,27 +347,35 @@ const PatientSimulator = ({ isActive, onStart, onStop, onConversationUpdate, onA
   };
   
   // Helper to capture audio for saving
-  const captureAudioForSaving = (audioUrl) => {
+  const captureAudioForSaving = async (audioUrl) => {
     try {
-      fetch(audioUrl)
-        .then(response => response.blob())
-        .then(audioBlob => {
-          // Store the audio with its metadata
-          const audioEntry = {
-            role: 'patient',
-            blob: audioBlob,
-            timestamp: new Date().toISOString(),
-            url: audioUrl
-          };
-          setConversationAudio(prev => [...prev, audioEntry]);
-          
-          if (onAudioRecorded) {
-            onAudioRecorded(audioEntry);
-          }
-        })
-        .catch(blobError => {
-          console.error('Error capturing audio blob:', blobError);
-        });
+      // Only proceed if we have a valid URL
+      if (!audioUrl) {
+        console.warn('No audio URL provided to capture');
+        return;
+      }
+
+      const response = await fetch(audioUrl);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch audio: ${response.statusText}`);
+      }
+
+      const audioBlob = await response.blob();
+      
+      // Store the audio with its metadata
+      const audioEntry = {
+        role: 'patient',
+        blob: audioBlob,
+        timestamp: new Date().toISOString()
+      };
+
+      // Update conversation audio state
+      setConversationAudio(prev => [...prev, audioEntry]);
+      
+      // Notify parent component
+      if (onAudioRecorded) {
+        onAudioRecorded(audioEntry);
+      }
     } catch (error) {
       console.error('Error in captureAudioForSaving:', error);
     }
@@ -566,7 +570,24 @@ const PatientSimulator = ({ isActive, onStart, onStop, onConversationUpdate, onA
   }, [isActive, onAudioRecorded]);
 
   const handleVisemePlayComplete = () => {
+    console.log("Viseme animation playback complete");
     setIsVisemePlaying(false);
+    
+    // Ensure we clean up and go back to neutral state
+    // Set a neutral mouth position
+    setVisemeData([
+      { visemeId: 0, audioOffset: 0 },
+      { visemeId: 0, audioOffset: 500 }
+    ]);
+    
+    // Clean up audio URL if needed
+    if (currentAudioUrl && !isCachedUrl(currentAudioUrl)) {
+      try {
+        URL.revokeObjectURL(currentAudioUrl);
+      } catch (e) {
+        console.warn("Error revoking audio URL:", e);
+      }
+    }
   };
 
   // Clean up audio resources
