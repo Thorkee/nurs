@@ -1,0 +1,392 @@
+[
+  {
+    "role": "user",
+    "text": "HI 你叫咩名呀",
+    "timestamp": 1744331870673
+  },
+  {
+    "role": "assistant",
+    "text": "我姓陳，叫我陳先生就得啦。",
+    "timestamp": 1744331870673
+  },
+  {
+    "role": "user",
+    "text": "HELLO 陳生, 你同咗醫生講你直腸流血,咁你有冇話邊到痛",
+    "timestamp": 1744332493270
+  },
+  {
+    "role": "assistant",
+    "text": "呃…有時肚下面有啲痛…唔係成日痛…但有時會痙攣咁…",
+    "timestamp": 1744332493270
+  },
+  {
+    "role": "user",
+    "text": "咁你衣一個痛幾時開始痛",
+    "timestamp": 1744332563574
+  },
+  {
+    "role": "assistant",
+    "text": "應該係幾個月之前…但我唔係好記得準確係幾時…因為一開始都唔係好覺…",
+    "timestamp": 1744332563574
+  },
+  {
+    "role": "user",
+    "text": "可唔可以講你邊個位痛?",
+    "timestamp": 1744332613158
+  },
+  {
+    "role": "assistant",
+    "text": "呃…應該係呢度…（用手指下腹左下方）…有時痛會向周圍擴散…",
+    "timestamp": 1744332613158
+  },
+  {
+    "role": "user",
+    "text": "咁你每次痛會痛幾耐",
+    "timestamp": 1744332682589
+  },
+  {
+    "role": "assistant",
+    "text": "有時幾分鐘…有時可能成半個鐘…但唔會成日痛住…",
+    "timestamp": 1744332682589
+  },
+  {
+    "role": "user",
+    "text": "咁你可唔可以形容一下點痛法?",
+    "timestamp": 1744332732557
+  },
+  {
+    "role": "assistant",
+    "text": "有時係刺痛…有時又好似痙攣咁…好難形容…",
+    "timestamp": 1744332732557
+  },
+  {
+    "role": "user",
+    "text": "咁你會唔會做d咩加劇你既痛",
+    "timestamp": 1744332798141
+  },
+  {
+    "role": "assistant",
+    "text": "有時食完飯會覺得重咗…但都唔係話好大影響…",
+    "timestamp": 1744332798141
+  },
+  {
+    "role": "user",
+    "text": "咁你有冇話嘗試用咩方法減輕流血情況",
+    "timestamp": 1744332919645
+  },
+  {
+    "role": "assistant",
+    "text": "我試過自己買啲止血藥膏…但都冇乜用…",
+    "timestamp": 1744332919645
+  },
+  {
+    "role": "user",
+    "text": "我想問一問你個情況有冇嚴重?",
+    "timestamp": 1744333013796
+  },
+  {
+    "role": "assistant",
+    "text": "醫生話要再睇清楚先知…所以先安排咗做呢個檢查…",
+    "timestamp": 1744333013796
+  },
+  {
+    "role": "user",
+    "text": "0分唔痛,10分最痛你比幾多分",
+    "timestamp": 1744333070172
+  },
+  {
+    "role": "assistant",
+    "text": "大約5至6分咁…唔係頂唔順但都幾辛苦…",
+    "timestamp": 1744333070172
+  },
+  {
+    "role": "user",
+    "text": "一陣仲有咩問題再搵你",
+    "timestamp": 1744333120996
+  },
+  {
+    "role": "assistant",
+    "text": "好…麻煩你啦…",
+    "timestamp": 1744333120996
+  },
+  {
+    "role": "user",
+    "text": "今日同你做腹部检查",
+    "timestamp": 1744333779928
+  },
+  {
+    "role": "assistant",
+    "text": "吓…要除衫?",
+    "timestamp": 1744333779928
+  },
+  {
+    "role": "user",
+    "text": "可唔可以拉高你的衣服",
+    "timestamp": 1744333865920
+  },
+  {
+    "role": "assistant",
+    "text": "哦…咁好啲…但會唔會好凍?",
+    "timestamp": 1744333865920
+  },
+  {
+    "role": "user",
+    "text": "好快的，不会好冻",
+    "timestamp": 1744333894729
+  },
+  {
+    "role": "assistant",
+    "text": "好吧…咁我試下忍住…",
+    "timestamp": 1744333894729
+  },
+  {
+    "role": "user",
+    "text": "我而家开始啦",
+    "timestamp": 1744333931921
+  },
+  {
+    "role": "assistant",
+    "text": "哦…好…",
+    "timestamp": 1744333931921
+  },
+  {
+    "role": "user",
+    "text": "肚比较平滑，有点黄，粉，呼吸顺畅，毛发均匀，大致无问题",
+    "timestamp": 1744334021682
+  },
+  {
+    "role": "assistant",
+    "text": "咁即係正常?",
+    "timestamp": 1744334021682
+  },
+  {
+    "role": "user",
+    "text": "正常的",
+    "timestamp": 1744334039210
+  },
+  {
+    "role": "assistant",
+    "text": "咁就好…",
+    "timestamp": 1744334039210
+  },
+  {
+    "role": "user",
+    "text": "而家同你做听下你腹部声音",
+    "timestamp": 1744334066306
+  },
+  {
+    "role": "assistant",
+    "text": "腹部都有聲?",
+    "timestamp": 1744334066306
+  },
+  {
+    "role": "user",
+    "text": "是的，肠蠕动会有声的",
+    "timestamp": 1744334097750
+  },
+  {
+    "role": "assistant",
+    "text": "哦…我第一次聽…",
+    "timestamp": 1744334097750
+  },
+  {
+    "role": "user",
+    "text": "而家由你右下方开始听，会有点凉，麻烦忍一忍",
+    "timestamp": 1744334152723
+  },
+  {
+    "role": "assistant",
+    "text": "哦…真係幾涼…",
+    "timestamp": 1744334152723
+  },
+  {
+    "role": "user",
+    "text": "声音正常",
+    "timestamp": 1744334240766
+  },
+  {
+    "role": "assistant",
+    "text": "即係有聲就正常?",
+    "timestamp": 1744334240766
+  },
+  {
+    "role": "user",
+    "text": "频率平均，肠道正常，唔需要担心",
+    "timestamp": 1744334432990
+  },
+  {
+    "role": "assistant",
+    "text": "咁就好…",
+    "timestamp": 1744334432990
+  },
+  {
+    "role": "user",
+    "text": "而家用手敲一敲你个肚，可能有点冷，你介不介意",
+    "timestamp": 1744334510382
+  },
+  {
+    "role": "assistant",
+    "text": "試下啦…",
+    "timestamp": 1744334510382
+  },
+  {
+    "role": "user",
+    "text": "正常，有没有哪个位置比较痛",
+    "timestamp": 1744334636805
+  },
+  {
+    "role": "assistant",
+    "text": "冇特別痛，但有啲位置按落去怪怪哋…",
+    "timestamp": 1744334636805
+  },
+  {
+    "role": "user",
+    "text": "好，而家同你按一按你个肚，由轻到重，你可以吗",
+    "timestamp": 1744334972571
+  },
+  {
+    "role": "assistant",
+    "text": "可以…但唔好太大力…",
+    "timestamp": 1744334972571
+  },
+  {
+    "role": "user",
+    "text": "按落去肌肉分布平均，平滑",
+    "timestamp": 1744335034059
+  },
+  {
+    "role": "assistant",
+    "text": "即係冇問題?",
+    "timestamp": 1744335034059
+  },
+  {
+    "role": "user",
+    "text": "没问题呀",
+    "timestamp": 1744335053595
+  },
+  {
+    "role": "assistant",
+    "text": "咁就好…",
+    "timestamp": 1744335053595
+  },
+  {
+    "role": "user",
+    "text": "而家大力一点按你",
+    "timestamp": 1744335065299
+  },
+  {
+    "role": "assistant",
+    "text": "哦…咁樣有啲唔舒服…",
+    "timestamp": 1744335065299
+  },
+  {
+    "role": "user",
+    "text": "醫生有冇同你講今日要做腸鏡?",
+    "timestamp": 1744335845288
+  },
+  {
+    "role": "assistant",
+    "text": "有呀…但我仲有啲驚…",
+    "timestamp": 1744335845288
+  },
+  {
+    "role": "user",
+    "text": "咁一陣間好快做完, 唔洗擔心",
+    "timestamp": 1744335894888
+  },
+  {
+    "role": "assistant",
+    "text": "但…聽講會唔會痛架?",
+    "timestamp": 1744335894888
+  },
+  {
+    "role": "user",
+    "text": "咁照腸鏡會有少少痛, 你有冇事前做好準備?",
+    "timestamp": 1744335954703
+  },
+  {
+    "role": "assistant",
+    "text": "有呀…醫生俾咗啲藥我食…但真係要清到完全冇嘢先得?",
+    "timestamp": 1744335954703
+  },
+  {
+    "role": "user",
+    "text": "係呀, 要清到條腸完全冇野先得",
+    "timestamp": 1744336008663
+  },
+  {
+    "role": "assistant",
+    "text": "明白…不過真係幾麻煩…",
+    "timestamp": 1744336008663
+  },
+  {
+    "role": "user",
+    "text": "係呀, 咁辛苦你啦",
+    "timestamp": 1744336066839
+  },
+  {
+    "role": "assistant",
+    "text": "唔緊要…希望可以查到有咩問題啦…",
+    "timestamp": 1744336066839
+  },
+  {
+    "role": "user",
+    "text": "有冇假牙?有冇首飾?",
+    "timestamp": 1744336093040
+  },
+  {
+    "role": "assistant",
+    "text": "假牙就冇…但有戴婚戒…要除咗佢?",
+    "timestamp": 1744336093040
+  },
+  {
+    "role": "user",
+    "text": "都要除呀, 可以叫家人保管",
+    "timestamp": 1744336128951
+  },
+  {
+    "role": "assistant",
+    "text": "Sorry, I encountered an error. Please try again.",
+    "timestamp": 1744336129958
+  },
+  {
+    "role": "user",
+    "text": "之前醫生有冇畀同意書你簽?",
+    "timestamp": 1744336165278
+  },
+  {
+    "role": "assistant",
+    "text": "有呀…但我唔係好明晒入面寫咩…",
+    "timestamp": 1744336165278
+  },
+  {
+    "role": "user",
+    "text": "醫生會同你再解釋多次腸鏡做咩",
+    "timestamp": 1744336234302
+  },
+  {
+    "role": "assistant",
+    "text": "好…希望可以查到原因啦…",
+    "timestamp": 1744336234302
+  },
+  {
+    "role": "user",
+    "text": "咁你休息一陣先啦",
+    "timestamp": 1744336273158
+  },
+  {
+    "role": "assistant",
+    "text": "好…麻醉藥幾時會散呀?",
+    "timestamp": 1744336273158
+  },
+  {
+    "role": "user",
+    "text": "一日內",
+    "timestamp": 1744336290902
+  },
+  {
+    "role": "assistant",
+    "text": "咁即係今日都仲會攰?",
+    "timestamp": 1744336290902
+  }
+]
