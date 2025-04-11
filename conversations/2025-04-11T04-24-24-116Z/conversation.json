@@ -1,0 +1,332 @@
+[
+  {
+    "role": "user",
+    "text": "何時開始痛",
+    "timestamp": 1744339379176
+  },
+  {
+    "role": "assistant",
+    "text": "大約幾個月前開始，最初只係間中覺得唔舒服，但最近就變得頻密同埋嚴重啲，所以先決定睇醫生。",
+    "timestamp": 1744339379176
+  },
+  {
+    "role": "user",
+    "text": "哪裏痛",
+    "timestamp": 1744339422456
+  },
+  {
+    "role": "assistant",
+    "text": "主要係下腹部，左右兩邊都會有，不過有時又好似成個肚都脹咁，唔係好清楚準確位置。",
+    "timestamp": 1744339422456
+  },
+  {
+    "role": "user",
+    "text": "怎樣痛",
+    "timestamp": 1744339476600
+  },
+  {
+    "role": "assistant",
+    "text": "有時係隱隱作痛，有時又好似刺痛咁，特別係食完嘢或者去完廁所之後會更加明顯。",
+    "timestamp": 1744339476600
+  },
+  {
+    "role": "user",
+    "text": "有沒有吃過止痛藥",
+    "timestamp": 1744339518775
+  },
+  {
+    "role": "assistant",
+    "text": "有呀，食過啲普通止痛藥，好似Panadol咁，不過效果唔係好明顯，頂多係舒緩一陣，之後又會痛返。",
+    "timestamp": 1744339518775
+  },
+  {
+    "role": "user",
+    "text": "0-10分有多少分痛",
+    "timestamp": 1744339551183
+  },
+  {
+    "role": "assistant",
+    "text": "大約5至6分啦，唔算係頂唔順嗰種痛，但係持續咁痛真係幾困擾。",
+    "timestamp": 1744339551183
+  },
+  {
+    "role": "user",
+    "text": "流血大概流多久",
+    "timestamp": 1744339620343
+  },
+  {
+    "role": "assistant",
+    "text": "每次都係少少，唔係成日都有，但一見到真係會嚇親。",
+    "timestamp": 1744339620343
+  },
+  {
+    "role": "user",
+    "text": "有什么情款况流血会加剧？",
+    "timestamp": 1744339671511
+  },
+  {
+    "role": "assistant",
+    "text": "未特別留意到，不過有時大便完抹嗰陣會見到紙巾有血絲，所以唔知係咪因為用力過度。",
+    "timestamp": 1744339671511
+  },
+  {
+    "role": "user",
+    "text": "流血是什么颜色和质地？",
+    "timestamp": 1744339715055
+  },
+  {
+    "role": "assistant",
+    "text": "有時係鮮紅色，好似啲血絲咁；有時又好似啲暗紅色嘅點狀，混埋係大便度。",
+    "timestamp": 1744339715055
+  },
+  {
+    "role": "user",
+    "text": "除左大便出血外，有否有其他症状？",
+    "timestamp": 1744339781615
+  },
+  {
+    "role": "assistant",
+    "text": "最近覺得肚仔有時會脹脹地，仲有啲不規則嘅痛楚，好似刺痛咁，但唔係好持續。",
+    "timestamp": 1744339781615
+  },
+  {
+    "role": "user",
+    "text": "而家幫你帮你听肠鸣音",
+    "timestamp": 1744340705475
+  },
+  {
+    "role": "assistant",
+    "text": "哦，咁即係要用聽筒？",
+    "timestamp": 1744340705475
+  },
+  {
+    "role": "user",
+    "text": "可不可以详细指出哪一个位置痛？",
+    "timestamp": 1744340742211
+  },
+  {
+    "role": "assistant",
+    "text": "嗯…其實唔係固定一個位，有時係左邊，有時係右邊，通常係肚臍附近。",
+    "timestamp": 1744340742211
+  },
+  {
+    "role": "user",
+    "text": "那我将会由先生你不觉得疼痛的位置开始按压",
+    "timestamp": 1744340774411
+  },
+  {
+    "role": "assistant",
+    "text": "嗯…好…但可以輕力啲嗎？我比較怕痛…",
+    "timestamp": 1744340774411
+  },
+  {
+    "role": "user",
+    "text": "可以啊，没有问题！请你忍一忍",
+    "timestamp": 1744340817651
+  },
+  {
+    "role": "assistant",
+    "text": "好…好…你開始啦…",
+    "timestamp": 1744340817651
+  },
+  {
+    "role": "user",
+    "text": "现在帮你进行敲击肝脏",
+    "timestamp": 1744340883427
+  },
+  {
+    "role": "assistant",
+    "text": "哦？敲擊？點樣敲？會唔會痛㗎？",
+    "timestamp": 1744340883427
+  },
+  {
+    "role": "user",
+    "text": "用手指敲击， 不会痛的",
+    "timestamp": 1744340934771
+  },
+  {
+    "role": "assistant",
+    "text": "哦…好吧…咁就試下…",
+    "timestamp": 1744340934771
+  },
+  {
+    "role": "user",
+    "text": "是一个正常的肚子",
+    "timestamp": 1744341110618
+  },
+  {
+    "role": "assistant",
+    "text": "吓…咩叫正常㗎？即係冇問題？",
+    "timestamp": 1744341110618
+  },
+  {
+    "role": "user",
+    "text": "经过一轮发现没有问题",
+    "timestamp": 1744341144219
+  },
+  {
+    "role": "assistant",
+    "text": "哦…咁即係好事啦！但點解我仲會有啲痛㗎？",
+    "timestamp": 1744341144219
+  },
+  {
+    "role": "user",
+    "text": "帮你量了肝脏长度是正常的， 刚才有痛吗？",
+    "timestamp": 1744341397533
+  },
+  {
+    "role": "assistant",
+    "text": "哦…咁即係肝冇問題？咁啱啱輕輕痛係咪正常㗎？",
+    "timestamp": 1744341397533
+  },
+  {
+    "role": "user",
+    "text": "0-10分有多痛",
+    "timestamp": 1744341429861
+  },
+  {
+    "role": "assistant",
+    "text": "嗯…大概2至3分咁…唔算好痛…",
+    "timestamp": 1744341429861
+  },
+  {
+    "role": "user",
+    "text": "我们之后再帮你找那个位置痛",
+    "timestamp": 1744341456229
+  },
+  {
+    "role": "assistant",
+    "text": "好啊…希望可以搵到原因啦…",
+    "timestamp": 1744341456229
+  },
+  {
+    "role": "user",
+    "text": "发现你左侧肚子比较痛， 会和医生商量开止痛药给你",
+    "timestamp": 1744341714236
+  },
+  {
+    "role": "assistant",
+    "text": "好啊…因為有時真係幾唔舒服…",
+    "timestamp": 1744341714236
+  },
+  {
+    "role": "user",
+    "text": "我们将会与医生商量给与止痛效果更强的止痛药，请不用担心",
+    "timestamp": 1744341835715
+  },
+  {
+    "role": "assistant",
+    "text": "咁就好…因為有時真係頂唔順…",
+    "timestamp": 1744341835715
+  },
+  {
+    "role": "user",
+    "text": "知不知道手術的過程",
+    "timestamp": 1744342253122
+  },
+  {
+    "role": "assistant",
+    "text": "呃…醫生大概講過…但我都唔係好清楚…",
+    "timestamp": 1744342253122
+  },
+  {
+    "role": "user",
+    "text": "將會把內窺鏡經由肛門塞入結腸和直腸 來看有沒有腫瘤",
+    "timestamp": 1744342354322
+  },
+  {
+    "role": "assistant",
+    "text": "哦…即係要入去睇清楚…咁會唔會好辛苦㗎？",
+    "timestamp": 1744342354322
+  },
+  {
+    "role": "user",
+    "text": "唔會因為會打麻醉藥 醫生應該有事前告知",
+    "timestamp": 1744342417289
+  },
+  {
+    "role": "assistant",
+    "text": "哦…係有講過…但我都係有少少擔心…",
+    "timestamp": 1744342417289
+  },
+  {
+    "role": "user",
+    "text": "明白 你知道是半身還是全身麻醉嗎",
+    "timestamp": 1744342473569
+  },
+  {
+    "role": "assistant",
+    "text": "呃…應該係半身掛…因為醫生話我會半瞓半醒咁…",
+    "timestamp": 1744342473569
+  },
+  {
+    "role": "user",
+    "text": "伙",
+    "timestamp": 1744342506578
+  },
+  {
+    "role": "assistant",
+    "text": "我以為會全身麻醉，原來唔係？",
+    "timestamp": 1744342506578
+  },
+  {
+    "role": "user",
+    "text": "伙",
+    "timestamp": 1744342510962
+  },
+  {
+    "role": "assistant",
+    "text": "哦…咁即係我會知發生緊咩事？",
+    "timestamp": 1744342510962
+  },
+  {
+    "role": "user",
+    "text": "你簽了同意書嗎",
+    "timestamp": 1744342539905
+  },
+  {
+    "role": "assistant",
+    "text": "簽咗…但其實我都唔係好清楚晒細節…",
+    "timestamp": 1744342539905
+  },
+  {
+    "role": "user",
+    "text": "你有沒有食瀉藥 醫生應該有開",
+    "timestamp": 1744342614433
+  },
+  {
+    "role": "assistant",
+    "text": "有呀…不過好難頂…成日要去廁所…",
+    "timestamp": 1744342614433
+  },
+  {
+    "role": "user",
+    "text": "這是一個正常的現象 這是幫助你清理腸道 記住多喝水",
+    "timestamp": 1744342681177
+  },
+  {
+    "role": "assistant",
+    "text": "哦…原來真係要清到咁乾淨…我以為差唔多就得…",
+    "timestamp": 1744342681177
+  },
+  {
+    "role": "user",
+    "text": "最後想問你三日前有沒有吃低纤维的膳食？",
+    "timestamp": 1744342731450
+  },
+  {
+    "role": "assistant",
+    "text": "有啊…醫生有交代過，我都有跟住做…",
+    "timestamp": 1744342731450
+  },
+  {
+    "role": "user",
+    "text": "好好",
+    "timestamp": 1744342747824
+  },
+  {
+    "role": "assistant",
+    "text": "咁即係我準備得夠晒啦？",
+    "timestamp": 1744342747824
+  }
+]
