@@ -1,0 +1,462 @@
+[
+  {
+    "role": "user",
+    "text": "有无边度痛",
+    "timestamp": 1744357544922
+  },
+  {
+    "role": "assistant",
+    "text": "最近呢排成日覺得肚嗡嗡痛，特別係左邊，唔係好劇烈嗰隻，但係成日都覺得唔舒服…",
+    "timestamp": 1744357544922
+  },
+  {
+    "role": "user",
+    "text": "由几时开始痛",
+    "timestamp": 1744357591650
+  },
+  {
+    "role": "assistant",
+    "text": "大約一個月前開始，之前都只係偶然痛下，但最近頻密咗…",
+    "timestamp": 1744357591650
+  },
+  {
+    "role": "user",
+    "text": "痛系持续痛或者系一日痛几耐",
+    "timestamp": 1744357647122
+  },
+  {
+    "role": "assistant",
+    "text": "一開始以為係食錯嘢，休息下就好返。但係而家成日都痛，尤其係食完嘢之後，痛幾個鐘都唔好…",
+    "timestamp": 1744357647122
+  },
+  {
+    "role": "user",
+    "text": "请问你系点样痛法",
+    "timestamp": 1744357677674
+  },
+  {
+    "role": "assistant",
+    "text": "有時係好似揪住咁，有時又好似頂住頂住…唔知點解會咁…",
+    "timestamp": 1744357677674
+  },
+  {
+    "role": "user",
+    "text": "你有无食药或者做D咩令到无甘痛",
+    "timestamp": 1744357724554
+  },
+  {
+    "role": "assistant",
+    "text": "試過食腸胃藥，但係冇乜幫助…有時用暖水袋敷下會好少少…",
+    "timestamp": 1744357724554
+  },
+  {
+    "role": "user",
+    "text": "你之前有无曾经有过一D肠胃相关疾病",
+    "timestamp": 1744357758026
+  },
+  {
+    "role": "assistant",
+    "text": "之前有試過胃酸倒流，但係冇試過咁耐都唔好…",
+    "timestamp": 1744357758026
+  },
+  {
+    "role": "user",
+    "text": "0分吴痛10分最痛你会比几多分",
+    "timestamp": 1744357794753
+  },
+  {
+    "role": "assistant",
+    "text": "大概5、6分咁，唔係話痛到頂唔順，但係成日都痛，好辛苦…",
+    "timestamp": 1744357794753
+  },
+  {
+    "role": "user",
+    "text": "有无话做D咩会令到更加痛",
+    "timestamp": 1744357830450
+  },
+  {
+    "role": "assistant",
+    "text": "食完嘢之後會特別痛，所以最近都唔敢食太多…",
+    "timestamp": 1744357830450
+  },
+  {
+    "role": "user",
+    "text": "你有无咩食物敏感",
+    "timestamp": 1744357845442
+  },
+  {
+    "role": "assistant",
+    "text": "暫時冇發現有咩特別敏感…",
+    "timestamp": 1744357845442
+  },
+  {
+    "role": "user",
+    "text": "除左痛有无其他吴舒服",
+    "timestamp": 1744357881170
+  },
+  {
+    "role": "assistant",
+    "text": "有時會覺得腸胃好脹，成個肚谷住咁…",
+    "timestamp": 1744357881170
+  },
+  {
+    "role": "user",
+    "text": "你排便方面会吴会有D咩困难",
+    "timestamp": 1744357916282
+  },
+  {
+    "role": "assistant",
+    "text": "係啊，有時便秘，有時又會肚瀉，成日都唔穩定…",
+    "timestamp": 1744357916282
+  },
+  {
+    "role": "user",
+    "text": "你有无留意你D大便系咩色",
+    "timestamp": 1744357940769
+  },
+  {
+    "role": "assistant",
+    "text": "有時正常，有時又會帶啲血絲，搞到我好擔心…",
+    "timestamp": 1744357940769
+  },
+  {
+    "role": "user",
+    "text": "血丝系啡红色定系鲜红色",
+    "timestamp": 1744358062937
+  },
+  {
+    "role": "assistant",
+    "text": "應該係鮮紅色，因為好易睇到…",
+    "timestamp": 1744358062937
+  },
+  {
+    "role": "user",
+    "text": "你有无做过肠胃手术",
+    "timestamp": 1744358084113
+  },
+  {
+    "role": "assistant",
+    "text": "冇啊，之前都冇試過咩大問題…",
+    "timestamp": 1744358084113
+  },
+  {
+    "role": "user",
+    "text": "你宜家有无食开D咩药物",
+    "timestamp": 1744358120097
+  },
+  {
+    "role": "assistant",
+    "text": "冇特別食開藥，最多都係食啲維他命…",
+    "timestamp": 1744358120097
+  },
+  {
+    "role": "user",
+    "text": "近排有无去过边度旅行",
+    "timestamp": 1744358150033
+  },
+  {
+    "role": "assistant",
+    "text": "冇啊，成日都喺香港，最多都係去深圳…",
+    "timestamp": 1744358150033
+  },
+  {
+    "role": "user",
+    "text": "有无试过屋企人有相关的肠胃问题",
+    "timestamp": 1744358215289
+  },
+  {
+    "role": "assistant",
+    "text": "啊…我记得我爸爸以前都有肠胃问题，但具体系咩就唔太清楚…",
+    "timestamp": 1744358215289
+  },
+  {
+    "role": "user",
+    "text": "你之前有无做过大肠癌的检查",
+    "timestamp": 1744358241721
+  },
+  {
+    "role": "assistant",
+    "text": "冇啊，呢次都係第一次做呢啲检查…",
+    "timestamp": 1744358241721
+  },
+  {
+    "role": "user",
+    "text": "我帮你做腹部检查",
+    "timestamp": 1744359438027
+  },
+  {
+    "role": "assistant",
+    "text": "哦…要點做㗎？",
+    "timestamp": 1744359438027
+  },
+  {
+    "role": "user",
+    "text": "会用听诊器，掀开你的被子和衣服",
+    "timestamp": 1744359508292
+  },
+  {
+    "role": "assistant",
+    "text": "哦…好啦…",
+    "timestamp": 1744359508292
+  },
+  {
+    "role": "user",
+    "text": "腹部轮廓正常，现在用听诊器",
+    "timestamp": 1744359662509
+  },
+  {
+    "role": "assistant",
+    "text": "嗯…個聽筒好凍啊…",
+    "timestamp": 1744359662509
+  },
+  {
+    "role": "user",
+    "text": "我会用手温一温个听诊器",
+    "timestamp": 1744359707285
+  },
+  {
+    "role": "assistant",
+    "text": "哦…咁會好啲…",
+    "timestamp": 1744359707285
+  },
+  {
+    "role": "user",
+    "text": "听到咕噜的声音，是正常的",
+    "timestamp": 1744359780582
+  },
+  {
+    "role": "assistant",
+    "text": "哦…咁即係腸喺郁緊？",
+    "timestamp": 1744359780582
+  },
+  {
+    "role": "user",
+    "text": "系正常的肠道蠕动",
+    "timestamp": 1744359809599
+  },
+  {
+    "role": "assistant",
+    "text": "哦…咁就好…",
+    "timestamp": 1744359809599
+  },
+  {
+    "role": "user",
+    "text": "刚刚听完，就没有杂音",
+    "timestamp": 1744359916263
+  },
+  {
+    "role": "assistant",
+    "text": "咁即係正常？",
+    "timestamp": 1744359916263
+  },
+  {
+    "role": "user",
+    "text": "无杂音是正常的、",
+    "timestamp": 1744359938095
+  },
+  {
+    "role": "assistant",
+    "text": "咁我安心啲…",
+    "timestamp": 1744359938095
+  },
+  {
+    "role": "user",
+    "text": "现在准备敲你的腹部",
+    "timestamp": 1744359964567
+  },
+  {
+    "role": "assistant",
+    "text": "哦…要敲嘅？",
+    "timestamp": 1744359964567
+  },
+  {
+    "role": "user",
+    "text": "是的，听声音正不正常",
+    "timestamp": 1744359988119
+  },
+  {
+    "role": "assistant",
+    "text": "原來可以咁樣聽…",
+    "timestamp": 1744359988119
+  },
+  {
+    "role": "user",
+    "text": "声音是正常的",
+    "timestamp": 1744360046720
+  },
+  {
+    "role": "assistant",
+    "text": "咁即係冇問題啦？",
+    "timestamp": 1744360046720
+  },
+  {
+    "role": "user",
+    "text": "刚刚有无感觉到痛",
+    "timestamp": 1744360061679
+  },
+  {
+    "role": "assistant",
+    "text": "冇話痛，但有少少唔舒服…",
+    "timestamp": 1744360061680
+  },
+  {
+    "role": "user",
+    "text": "刚帮你量度了肝脏的长度，现在会帮你做摸",
+    "timestamp": 1744360303793
+  },
+  {
+    "role": "assistant",
+    "text": "哦…要摸啲咩？",
+    "timestamp": 1744360303793
+  },
+  {
+    "role": "user",
+    "text": "摸腹部四个象限",
+    "timestamp": 1744360332145
+  },
+  {
+    "role": "assistant",
+    "text": "嗯…摸嚟做咩嘅？",
+    "timestamp": 1744360332145
+  },
+  {
+    "role": "user",
+    "text": "检查有没有痛或者硬块",
+    "timestamp": 1744360364856
+  },
+  {
+    "role": "assistant",
+    "text": "哦…咁即係要壓落去？",
+    "timestamp": 1744360364856
+  },
+  {
+    "role": "user",
+    "text": "系",
+    "timestamp": 1744360378256
+  },
+  {
+    "role": "assistant",
+    "text": "咁…你輕力啲啦…",
+    "timestamp": 1744360378256
+  },
+  {
+    "role": "user",
+    "text": "想请问你有无吃抗凝血药",
+    "timestamp": 1744361374297
+  },
+  {
+    "role": "assistant",
+    "text": "冇啊…嗰啲係咩嚟㗎？",
+    "timestamp": 1744361374297
+  },
+  {
+    "role": "user",
+    "text": "即系薄血丸",
+    "timestamp": 1744361405488
+  },
+  {
+    "role": "assistant",
+    "text": "哦…冇食過…",
+    "timestamp": 1744361405488
+  },
+  {
+    "role": "user",
+    "text": "有没有药物敏感",
+    "timestamp": 1744361417272
+  },
+  {
+    "role": "assistant",
+    "text": "暫時冇發現過…",
+    "timestamp": 1744361417272
+  },
+  {
+    "role": "user",
+    "text": "开始进行之前三日前你需要吃一些低纤维的食物",
+    "timestamp": 1744361443409
+  },
+  {
+    "role": "assistant",
+    "text": "點解要咁樣食㗎？",
+    "timestamp": 1744361443409
+  },
+  {
+    "role": "user",
+    "text": "因为这样可以清楚检测你大肠的情况】",
+    "timestamp": 1744361476623
+  },
+  {
+    "role": "assistant",
+    "text": "哦…原来係咁…",
+    "timestamp": 1744361476623
+  },
+  {
+    "role": "user",
+    "text": "做大肠检查前六个小时不可以吃东西",
+    "timestamp": 1744361494281
+  },
+  {
+    "role": "assistant",
+    "text": "咁耐唔食嘢…會唔會頂唔順啊？",
+    "timestamp": 1744361494281
+  },
+  {
+    "role": "user",
+    "text": "不会顶不顺的",
+    "timestamp": 1744361518544
+  },
+  {
+    "role": "assistant",
+    "text": "但我平時肚餓會唔舒服…",
+    "timestamp": 1744361518544
+  },
+  {
+    "role": "user",
+    "text": "那没办法，做这个需要你尽量休息，需要的话可以帮你吊盐水",
+    "timestamp": 1744361552376
+  },
+  {
+    "role": "assistant",
+    "text": "好吧…為咗檢查都唯有忍耐一下…",
+    "timestamp": 1744361552376
+  },
+  {
+    "role": "user",
+    "text": "你知不知道自己等一会儿要做什么",
+    "timestamp": 1744361612376
+  },
+  {
+    "role": "assistant",
+    "text": "知道…要做大腸鏡檢查…",
+    "timestamp": 1744361612376
+  },
+  {
+    "role": "user",
+    "text": "想请问你身上有没有任何金属的饰品，可以脱下给我们",
+    "timestamp": 1744361651080
+  },
+  {
+    "role": "assistant",
+    "text": "哦，有條頸鏈，我除咗佢先…",
+    "timestamp": 1744361651080
+  },
+  {
+    "role": "user",
+    "text": "好，我们会帮你保存好先，等完成后会给你",
+    "timestamp": 1744361678784
+  },
+  {
+    "role": "assistant",
+    "text": "好，唔該晒！",
+    "timestamp": 1744361678784
+  },
+  {
+    "role": "user",
+    "text": "你知不知道等一会手术如何做",
+    "timestamp": 1744361696736
+  },
+  {
+    "role": "assistant",
+    "text": "大概知道…聽講會有條管仔伸入去睇肚入面…",
+    "timestamp": 1744361696736
+  }
+]
