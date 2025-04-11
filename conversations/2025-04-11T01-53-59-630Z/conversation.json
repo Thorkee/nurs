@@ -1,0 +1,622 @@
+[
+  {
+    "role": "nurse",
+    "text": "你好呀先生,咁我想問下你過往個腸嗰度有冇話做過咩手術咁樣呀?",
+    "timestamp": "2025-04-11T01:00:38.019Z"
+  },
+  {
+    "role": "patient",
+    "text": "冇呀…之前都冇乜特別問題…",
+    "timestamp": "2025-04-11T01:00:40.490Z"
+  },
+  {
+    "role": "nurse",
+    "text": "我想問你有沒有食煙飲酒的習慣?",
+    "timestamp": "2025-04-11T01:00:57.880Z"
+  },
+  {
+    "role": "patient",
+    "text": "煙就冇…酒就偶然飲啲紅酒…",
+    "timestamp": "2025-04-11T01:00:59.811Z"
+  },
+  {
+    "role": "nurse",
+    "text": "我想問下你屋企有冇同你差唔多個腸有啲問題?",
+    "timestamp": "2025-04-11T01:01:23.380Z"
+  },
+  {
+    "role": "patient",
+    "text": "唔清楚喎…應該冇聽過…",
+    "timestamp": "2025-04-11T01:01:24.920Z"
+  },
+  {
+    "role": "nurse",
+    "text": "你好呀,咁想問埋你而家有冇肚痛呀?",
+    "timestamp": "2025-04-11T01:01:52.458Z"
+  },
+  {
+    "role": "patient",
+    "text": "有時有啲…但唔係好劇烈嗰種…",
+    "timestamp": "2025-04-11T01:01:53.968Z"
+  },
+  {
+    "role": "nurse",
+    "text": "想問下你係幾時開始肚痛呀?",
+    "timestamp": "2025-04-11T01:02:06.373Z"
+  },
+  {
+    "role": "patient",
+    "text": "可能一個月前左右…最初以為普通腸胃炎咋…",
+    "timestamp": "2025-04-11T01:02:07.776Z"
+  },
+  {
+    "role": "nurse",
+    "text": "可唔可以形容一下係邊個肚嘅邊個位置痛呀?",
+    "timestamp": "2025-04-11T01:02:24.511Z"
+  },
+  {
+    "role": "patient",
+    "text": "下低啲…右邊多啲…",
+    "timestamp": "2025-04-11T01:02:25.921Z"
+  },
+  {
+    "role": "nurse",
+    "text": "咁你痛咗幾耐呀? 同埋係一陣陣痛定係會持續咁痛呀?",
+    "timestamp": "2025-04-11T01:02:48.609Z"
+  },
+  {
+    "role": "patient",
+    "text": "通常都係一陣陣…唔會成日都痛…",
+    "timestamp": "2025-04-11T01:02:50.080Z"
+  },
+  {
+    "role": "nurse",
+    "text": "請問你可否形容一下痛? 類似赤著赤著痛還是隱隱作痛?",
+    "timestamp": "2025-04-11T01:03:10.483Z"
+  },
+  {
+    "role": "patient",
+    "text": "嗯…比較似隱隱作痛…",
+    "timestamp": "2025-04-11T01:03:11.868Z"
+  },
+  {
+    "role": "nurse",
+    "text": "想問問你會唔會做啲乜嘢可以舒緩嗰個痛楚或者做啲咩會令到個痛更加嚴重㗎?",
+    "timestamp": "2025-04-11T01:03:34.791Z"
+  },
+  {
+    "role": "patient",
+    "text": "休息吓會好啲…但食完嘢有時會加劇…",
+    "timestamp": "2025-04-11T01:03:38.253Z"
+  },
+  {
+    "role": "nurse",
+    "text": "想問埋, 如果零分唔痛, 十分最痛, 你而家有幾多分痛呀?",
+    "timestamp": "2025-04-11T01:04:00.142Z"
+  },
+  {
+    "role": "patient",
+    "text": "大概四至五分…唔係話好劇烈嗰種…但真係幾唔舒服…",
+    "timestamp": "2025-04-11T01:04:01.686Z"
+  },
+  {
+    "role": "nurse",
+    "text": "想問問你上一次大便, 記唔記得係幾時?",
+    "timestamp": "2025-04-11T01:04:38.135Z"
+  },
+  {
+    "role": "patient",
+    "text": "應該係兩日前…",
+    "timestamp": "2025-04-11T01:04:39.150Z"
+  },
+  {
+    "role": "nurse",
+    "text": "請問你有沒有服用便秘或止瀉藥?",
+    "timestamp": "2025-04-11T01:05:17.507Z"
+  },
+  {
+    "role": "patient",
+    "text": "冇呀…我驚亂食藥會唔會影響檢查…",
+    "timestamp": "2025-04-11T01:05:19.061Z"
+  },
+  {
+    "role": "nurse",
+    "text": "我想問下, 咁你兩日前個大便係咩食法, 咩形狀? 可唔可以形容一下?",
+    "timestamp": "2025-04-11T01:06:00.316Z"
+  },
+  {
+    "role": "patient",
+    "text": "嗯…有啲稀…但又唔算水, 形狀好似啲糊咁…而且有少少血絲…",
+    "timestamp": "2025-04-11T01:06:02.087Z"
+  },
+  {
+    "role": "nurse",
+    "text": "想問下你有血絲,幾時開始大便有血絲?",
+    "timestamp": "2025-04-11T01:06:25.999Z"
+  },
+  {
+    "role": "patient",
+    "text": "大概兩星期前開始見到少少…",
+    "timestamp": "2025-04-11T01:06:27.363Z"
+  },
+  {
+    "role": "nurse",
+    "text": "想問下你上次食嘢係幾時同埋係有冇弱脈敏感呀?",
+    "timestamp": "2025-04-11T01:07:09.907Z"
+  },
+  {
+    "role": "patient",
+    "text": "上次食嘢係昨晚七點, 暫時冇藥物敏感…",
+    "timestamp": "2025-04-11T01:07:11.414Z"
+  },
+  {
+    "role": "nurse",
+    "text": "我想問一下,對比起你第一次有血絲和你最近那一次大便, 你的痛感有沒有改變了?",
+    "timestamp": "2025-04-11T01:07:51.408Z"
+  },
+  {
+    "role": "patient",
+    "text": "嗯…最近好似冇之前咁痛, 但仲係有啲唔舒服…",
+    "timestamp": "2025-04-11T01:07:52.973Z"
+  },
+  {
+    "role": "nurse",
+    "text": "你由一開始有血絲到最上嗰次大便啦, 咁你啲血嘅量有冇睇過呀?",
+    "timestamp": "2025-04-11T01:08:17.426Z"
+  },
+  {
+    "role": "patient",
+    "text": "有呀…一開始係少少, 但最近好似多咗啲…",
+    "timestamp": "2025-04-11T01:08:18.612Z"
+  },
+  {
+    "role": "nurse",
+    "text": "咁個顏色方面有冇話係暗紅呀, 鮮紅定邊一種紅色?",
+    "timestamp": "2025-04-11T01:08:43.959Z"
+  },
+  {
+    "role": "patient",
+    "text": "應該係鮮紅…",
+    "timestamp": "2025-04-11T01:08:45.279Z"
+  },
+  {
+    "role": "nurse",
+    "text": "字幕由 Amara.org 社群提供",
+    "timestamp": "2025-04-11T01:09:02.662Z"
+  },
+  {
+    "role": "patient",
+    "text": "啊？咩字幕？我哋係咪講緊同一樣嘢？",
+    "timestamp": "2025-04-11T01:09:04.211Z"
+  },
+  {
+    "role": "nurse",
+    "text": "Transcribe in Hong Kong style Cantonese using Traditional Chinese characters and Hong Kong written style.",
+    "timestamp": "2025-04-11T01:09:30.336Z"
+  },
+  {
+    "role": "patient",
+    "text": "啊？咩字幕？我哋係咪講緊同一樣嘢？",
+    "timestamp": "2025-04-11T01:09:31.832Z"
+  },
+  {
+    "role": "nurse",
+    "text": "請問您由最開始有血絲大便到最近大便,有沒有說水份變多了?",
+    "timestamp": "2025-04-11T01:10:01.346Z"
+  },
+  {
+    "role": "patient",
+    "text": "係呀,最近次次都好似半稀咁,唔夠實…",
+    "timestamp": "2025-04-11T01:10:02.601Z"
+  },
+  {
+    "role": "nurse",
+    "text": "你有冇話通常幾時會肚痛呀?",
+    "timestamp": "2025-04-11T01:10:42.917Z"
+  },
+  {
+    "role": "patient",
+    "text": "多數係食完嘢之後會覺得攰攰地…",
+    "timestamp": "2025-04-11T01:10:44.427Z"
+  },
+  {
+    "role": "nurse",
+    "text": "我想問下你平時有冇食開咩加工食品咁樣嘅?",
+    "timestamp": "2025-04-11T01:11:21.526Z"
+  },
+  {
+    "role": "patient",
+    "text": "有呀…即食麵同埋啲腸仔咁…方便吖嘛…",
+    "timestamp": "2025-04-11T01:11:22.799Z"
+  },
+  {
+    "role": "nurse",
+    "text": "我想問下你啦, 平時有冇成日食菜同埋水飲得夠唔夠多?",
+    "timestamp": "2025-04-11T01:11:59.516Z"
+  },
+  {
+    "role": "patient",
+    "text": "唔算多…因為覺得麻煩囉…",
+    "timestamp": "2025-04-11T01:12:01.051Z"
+  },
+  {
+    "role": "nurse",
+    "text": "我想問下你呢個有血絲嘅情況有冇話好大程度影響到你生活?",
+    "timestamp": "2025-04-11T01:12:44.953Z"
+  },
+  {
+    "role": "patient",
+    "text": "有啊…成日都驚自己會唔會有啲咩大問題…",
+    "timestamp": "2025-04-11T01:12:46.460Z"
+  },
+  {
+    "role": "nurse",
+    "text": "想問下你個體重由你一開始有血絲嘅情況到依家有冇明顯嘅改變?",
+    "timestamp": "2025-04-11T01:13:19.723Z"
+  },
+  {
+    "role": "patient",
+    "text": "有呀…跌咗成五磅, 但我又冇特別減肥…",
+    "timestamp": "2025-04-11T01:13:21.740Z"
+  },
+  {
+    "role": "nurse",
+    "text": "我想問一下你平時大概多久去一次大便?",
+    "timestamp": "2025-04-11T01:13:56.866Z"
+  },
+  {
+    "role": "patient",
+    "text": "大概兩三日先去一次…",
+    "timestamp": "2025-04-11T01:13:58.221Z"
+  },
+  {
+    "role": "nurse",
+    "text": "有冇話自從你開始肚痛之後去多咗你去少咗?",
+    "timestamp": "2025-04-11T01:14:22.198Z"
+  },
+  {
+    "role": "patient",
+    "text": "去多咗…但每次都唔係好多…",
+    "timestamp": "2025-04-11T01:14:23.583Z"
+  },
+  {
+    "role": "nurse",
+    "text": "你好,陳先生,我們是香港理工大學的護士學生,今天會跟你做一個腸部的檢查,待會做這個檢查也要麻煩你脫下衣服,你會不會介意?",
+    "timestamp": "2025-04-11T01:25:28.541Z"
+  },
+  {
+    "role": "patient",
+    "text": "呃…要除晒?咁會唔會好尷尬?",
+    "timestamp": "2025-04-11T01:25:33.072Z"
+  },
+  {
+    "role": "nurse",
+    "text": "Transcribe in Hong Kong style.",
+    "timestamp": "2025-04-11T01:25:55.151Z"
+  },
+  {
+    "role": "patient",
+    "text": "呃…要除晒?咁會唔會好尷尬?",
+    "timestamp": "2025-04-11T01:25:57.390Z"
+  },
+  {
+    "role": "nurse",
+    "text": "我們這些護士學生會支持你, 等下做這個檢查的時候就放鬆, 躺在床上就可以了。 我們首先會由觀察你的皮膚狀態開始。",
+    "timestamp": "2025-04-11T01:26:33.074Z"
+  },
+  {
+    "role": "patient",
+    "text": "咁…要觀察幾耐?會唔會好凍?",
+    "timestamp": "2025-04-11T01:26:34.755Z"
+  },
+  {
+    "role": "nurse",
+    "text": "Transcribe in Hong Kong style Cantonese using Traditional Chinese characters and Hong Kong written style.",
+    "timestamp": "2025-04-11T01:26:54.960Z"
+  },
+  {
+    "role": "patient",
+    "text": "咁…要觀察幾耐?會唔會好凍?",
+    "timestamp": "2025-04-11T01:26:56.297Z"
+  },
+  {
+    "role": "nurse",
+    "text": "大約十五分鐘就完成㗎喇。",
+    "timestamp": "2025-04-11T01:27:08.582Z"
+  },
+  {
+    "role": "patient",
+    "text": "哦…咁好啦…我試下放鬆啲…",
+    "timestamp": "2025-04-11T01:27:10.038Z"
+  },
+  {
+    "role": "nurse",
+    "text": "好,我哋而家開始咗,你放鬆個日啦,保持正常呼吸就可以㗎啦。",
+    "timestamp": "2025-04-11T01:27:31.824Z"
+  },
+  {
+    "role": "patient",
+    "text": "好…我盡量放鬆…",
+    "timestamp": "2025-04-11T01:27:33.052Z"
+  },
+  {
+    "role": "nurse",
+    "text": "陳先生,我哋而家同你聽下你腸嘅聲音。",
+    "timestamp": "2025-04-11T01:28:37.878Z"
+  },
+  {
+    "role": "patient",
+    "text": "哦…咁樣都聽到?",
+    "timestamp": "2025-04-11T01:28:38.847Z"
+  },
+  {
+    "role": "nurse",
+    "text": "現在我敲下你個肚聽下個聲音",
+    "timestamp": "2025-04-11T01:32:01.485Z"
+  },
+  {
+    "role": "patient",
+    "text": "哦…原來咁樣可以知道啲咩?",
+    "timestamp": "2025-04-11T01:32:03.862Z"
+  },
+  {
+    "role": "nurse",
+    "text": "放鬆正常呼吸就可以了。",
+    "timestamp": "2025-04-11T01:32:16.321Z"
+  },
+  {
+    "role": "patient",
+    "text": "好…我試下…",
+    "timestamp": "2025-04-11T01:32:17.618Z"
+  },
+  {
+    "role": "nurse",
+    "text": "現在會敲敲, 睇下你嗰個肝臟有冇變大咗。",
+    "timestamp": "2025-04-11T01:34:06.709Z"
+  },
+  {
+    "role": "patient",
+    "text": "哦…原來可以咁樣知道㗎?",
+    "timestamp": "2025-04-11T01:34:09.267Z"
+  },
+  {
+    "role": "nurse",
+    "text": "可以㗎。 Yes, you can.",
+    "timestamp": "2025-04-11T01:34:30.677Z"
+  },
+  {
+    "role": "patient",
+    "text": "咁即係有冇問題呀?",
+    "timestamp": "2025-04-11T01:34:32.078Z"
+  },
+  {
+    "role": "nurse",
+    "text": "Thank you for watching!",
+    "timestamp": "2025-04-11T01:34:49.037Z"
+  },
+  {
+    "role": "patient",
+    "text": "唔使客氣…但係真係冇問題?",
+    "timestamp": "2025-04-11T01:34:51.282Z"
+  },
+  {
+    "role": "nurse",
+    "text": "Transcribe in Hong Kong style Cantonese using Traditional Chinese characters and Hong Kong written style. Always use Cantonese pronunciation characters and Hong Kong written style.",
+    "timestamp": "2025-04-11T01:35:16.785Z"
+  },
+  {
+    "role": "patient",
+    "text": "好…但係其實有冇問題呀？",
+    "timestamp": "2025-04-11T01:35:18.346Z"
+  },
+  {
+    "role": "nurse",
+    "text": "我們從你的圖的右上方開始",
+    "timestamp": "2025-04-11T01:35:41.329Z"
+  },
+  {
+    "role": "patient",
+    "text": "哦…即係邊個位呀？",
+    "timestamp": "2025-04-11T01:35:42.703Z"
+  },
+  {
+    "role": "nurse",
+    "text": "你肚自己有腸胱!",
+    "timestamp": "2025-04-11T01:36:06.553Z"
+  },
+  {
+    "role": "patient",
+    "text": "哈哈，咁當然啦！",
+    "timestamp": "2025-04-11T01:36:07.928Z"
+  },
+  {
+    "role": "nurse",
+    "text": "有冇覺得痛呀而家我撳你個腿嘅時候?",
+    "timestamp": "2025-04-11T01:36:22.091Z"
+  },
+  {
+    "role": "patient",
+    "text": "唔算痛，不過有啲頂住咁…",
+    "timestamp": "2025-04-11T01:36:23.844Z"
+  },
+  {
+    "role": "nurse",
+    "text": "Transcribe in Hong Kong style Cantonese using Traditional Chinese characters and Hong Kong written style. Always use Cantonese pronunciation characters and Hong Kong written style. Always include Cantonese pronunciation characters and Hong Kong written style.",
+    "timestamp": "2025-04-11T01:36:46.588Z"
+  },
+  {
+    "role": "patient",
+    "text": "唔算痛…不過有啲頂住咁…",
+    "timestamp": "2025-04-11T01:36:51.412Z"
+  },
+  {
+    "role": "nurse",
+    "text": "而家我撳你肚臍嘅右下方,睇下你會唔會覺得痛喇喎。",
+    "timestamp": "2025-04-11T01:37:06.343Z"
+  },
+  {
+    "role": "patient",
+    "text": "哎呀…呢度有啲刺痛喎…",
+    "timestamp": "2025-04-11T01:37:07.779Z"
+  },
+  {
+    "role": "nurse",
+    "text": "Thank you for watching!",
+    "timestamp": "2025-04-11T01:37:23.847Z"
+  },
+  {
+    "role": "patient",
+    "text": "唔使客氣啦！",
+    "timestamp": "2025-04-11T01:37:25.152Z"
+  },
+  {
+    "role": "nurse",
+    "text": "你好, 你入院之前, 我哋啲護士應該有同你講過, 你需要注重下你個飲食, 即係可能食清啲, 所以想問下你入嚟之前你食過啲乜嘢?",
+    "timestamp": "2025-04-11T01:42:53.299Z"
+  },
+  {
+    "role": "patient",
+    "text": "其實我都有跟住佢哋講，前一日淨係食咗啲粥同埋啲湯水啫，冇食其他重口味嘅嘢…",
+    "timestamp": "2025-04-11T01:42:56.289Z"
+  },
+  {
+    "role": "nurse",
+    "text": "我想問下你有冇跟咗嗰啲指引去飲嗰個瀉藥?",
+    "timestamp": "2025-04-11T01:43:25.961Z"
+  },
+  {
+    "role": "patient",
+    "text": "有呀…不過真係好難頂，飲到我想嘔…",
+    "timestamp": "2025-04-11T01:43:27.491Z"
+  },
+  {
+    "role": "nurse",
+    "text": "你係飲曬同埋有冇嘔返啲藥出嚟㗎?",
+    "timestamp": "2025-04-11T01:43:48.792Z"
+  },
+  {
+    "role": "patient",
+    "text": "勉強飲曬…但係有陣時真係頂唔順…有少少反胃…",
+    "timestamp": "2025-04-11T01:43:50.061Z"
+  },
+  {
+    "role": "nurse",
+    "text": "如果飲得唔舒服嘅時候可以試下慢慢飲啦, 同埋可以食啲新鮮嘅檸檬咁就可以舒緩到唔舒服嘅情況㗎喇。",
+    "timestamp": "2025-04-11T01:44:26.295Z"
+  },
+  {
+    "role": "patient",
+    "text": "哦…原來可以咁樣㗎…早知道試下…",
+    "timestamp": "2025-04-11T01:44:27.712Z"
+  },
+  {
+    "role": "nurse",
+    "text": "請問您昨日飲瀉時幾點開始?",
+    "timestamp": "2025-04-11T01:44:45.936Z"
+  },
+  {
+    "role": "patient",
+    "text": "大概…晚上七點左右開始飲…",
+    "timestamp": "2025-04-11T01:44:47.394Z"
+  },
+  {
+    "role": "nurse",
+    "text": "有冇再飲完瀉藥之後再飲多啲水或者脫水嘅情況?",
+    "timestamp": "2025-04-11T01:45:09.410Z"
+  },
+  {
+    "role": "patient",
+    "text": "有呀…我都有跟住飲多啲水…但係之後覺得有少少口乾…",
+    "timestamp": "2025-04-11T01:45:10.960Z"
+  },
+  {
+    "role": "nurse",
+    "text": "我哋都建議你再繼續飲多啲水啦, 咁同埋檢查之後可能你都會覺得有少少攰嘅, 咁記得之後都要記得搵啲朋友或者屋企人去陪你返屋企, 咁同埋之後嗰廿四個鐘都唔好做一啲好劇烈嘅運動啦, 咁同埋飲酒呀咁樣, 做一啲可能有害你健康嘅運動呀或者行為呀咁樣啦, 咁檢查完之後你個肚可能會覺得有少少腫脹, 咁我哋都建議你再繼續飲多啲水啦, 咁同埋檢查完之後你都會覺得有少少腫脹, 咁我哋都建議你再 可能會維持幾個鐘啦, 咁如果幾個鐘之後仲係好唔舒服或者有出現到腸出血嘅情況都記得同可能再見一見醫生或者同我哋咁樣講返啦",
+    "timestamp": "2025-04-11T01:46:16.278Z"
+  },
+  {
+    "role": "patient",
+    "text": "好…我會注意㗎…多謝你提醒…",
+    "timestamp": "2025-04-11T01:46:17.341Z"
+  },
+  {
+    "role": "nurse",
+    "text": "好,咁檢查嘅時候都睇一睇你唔好帶啲戒指呀, 手錶咁嘅金屬嘅物品啦, 同埋想問下你返嚟嘅時候有冇都帶啲同意書呀, 跟住身份證嗰啲返嚟?",
+    "timestamp": "2025-04-11T01:46:48.842Z"
+  },
+  {
+    "role": "patient",
+    "text": "有有有…我有帶哂…啲重要文件都準備好㗎啦…",
+    "timestamp": "2025-04-11T01:46:50.318Z"
+  },
+  {
+    "role": "nurse",
+    "text": "如果檢查完之後,你返到屋企之後記得飲多啲水,同埋唔可以再飲酒啦, 咁平時食嘢都食得健康少少啦, 可能多啲蔬菜呀水果嗰啲可以食返多啲。",
+    "timestamp": "2025-04-11T01:47:26.115Z"
+  },
+  {
+    "role": "patient",
+    "text": "嗯…我會試下改變飲食習慣…希望可以改善返身體狀況…",
+    "timestamp": "2025-04-11T01:47:27.391Z"
+  },
+  {
+    "role": "nurse",
+    "text": "請問您平時有沒有戴耳朵鎖或服用降血糖藥物?",
+    "timestamp": "2025-04-11T01:48:22.334Z"
+  },
+  {
+    "role": "patient",
+    "text": "冇喎…我冇糖尿病…",
+    "timestamp": "2025-04-11T01:48:23.960Z"
+  },
+  {
+    "role": "nurse",
+    "text": "多謝您收睇時局新聞,再會!",
+    "timestamp": "2025-04-11T01:48:56.335Z"
+  },
+  {
+    "role": "patient",
+    "text": "哈哈,多謝你哋詳細解釋同檢查,希望結果冇問題啦!",
+    "timestamp": "2025-04-11T01:48:57.917Z"
+  },
+  {
+    "role": "nurse",
+    "text": "好啦, 咁你依家都唔使得擔心啦, 之後唔可以再食公仔麵啦!",
+    "timestamp": "2025-04-11T01:49:26.841Z"
+  },
+  {
+    "role": "patient",
+    "text": "吓…真係要戒咩? 咁我唯有試下減少食啦…",
+    "timestamp": "2025-04-11T01:49:28.271Z"
+  },
+  {
+    "role": "nurse",
+    "text": "一定是吃多啲咩又係飲多啲咩。",
+    "timestamp": "2025-04-11T01:49:59.510Z"
+  },
+  {
+    "role": "patient",
+    "text": "咁樣講都啱嘅…可能真係要注意飲食習慣…",
+    "timestamp": "2025-04-11T01:50:00.935Z"
+  },
+  {
+    "role": "nurse",
+    "text": "剛剛姑娘跟您講咗呢, 咁您可唔可以話返畀我聽呢支腸鏡之後有啲咩要注意呢?",
+    "timestamp": "2025-04-11T01:50:31.063Z"
+  },
+  {
+    "role": "patient",
+    "text": "嗯…飲多啲水…唔好飲酒…食嘢健康啲…",
+    "timestamp": "2025-04-11T01:50:32.619Z"
+  },
+  {
+    "role": "nurse",
+    "text": "還有記得不要吃太多高纖維的食物,否則會導致容易肚子餓。",
+    "timestamp": "2025-04-11T01:51:44.085Z"
+  },
+  {
+    "role": "patient",
+    "text": "哦…原來咁樣會肚餓…我以為高纖維好健康呀…",
+    "timestamp": "2025-04-11T01:51:45.677Z"
+  }
+]
